@@ -81,7 +81,7 @@ watch(currentUrl, () => {
                 </button>
                 <div class="flex items-center gap-2 min-w-0 flex-1">
                     <img 
-                        :src="settings.store_logo || '/images/logo.png'" 
+                        :src="settings.store_logo ? (settings.store_logo + '?v=3') : '/images/logo.png?v=3'" 
                         alt="Logo" 
                         class="w-7 h-7 object-contain shrink-0" 
                     />
@@ -146,7 +146,7 @@ watch(currentUrl, () => {
                         <div class="h-16 px-4 flex items-center justify-between border-b border-slate-100 bg-white shrink-0">
                             <div class="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
                                 <img 
-                                    :src="settings.store_logo || '/images/logo.png'" 
+                                    :src="settings.store_logo ? (settings.store_logo + '?v=3') : '/images/logo.png?v=3'" 
                                     alt="Logo" 
                                     class="w-8 h-8 object-contain shrink-0" 
                                 />
@@ -258,7 +258,7 @@ watch(currentUrl, () => {
                 >
                     <div v-if="!isSidebarCollapsed" class="flex items-center gap-2.5 min-w-0 flex-1 mr-1">
                         <img 
-                            :src="settings.store_logo || '/images/logo.png'" 
+                            :src="settings.store_logo ? (settings.store_logo + '?v=3') : '/images/logo.png?v=3'" 
                             alt="Logo" 
                             class="w-10 h-10 object-contain drop-shadow-xs shrink-0" 
                         />
@@ -274,7 +274,7 @@ watch(currentUrl, () => {
 
                     <img 
                         v-else
-                        :src="settings.store_logo || '/images/logo.png'" 
+                        :src="settings.store_logo ? (settings.store_logo + '?v=3') : '/images/logo.png?v=3'" 
                         alt="Logo" 
                         class="w-7 h-7 object-contain drop-shadow-xs" 
                     />

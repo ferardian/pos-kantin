@@ -1,7 +1,7 @@
-const CACHE_NAME = 'trisna-jaya-v1';
+const CACHE_NAME = 'pos-kantin-v3';
 const URLS_TO_CACHE = [
   '/',
-  '/images/logo.png',
+  '/images/logo.png?v=3',
   '/manifest.json'
 ];
 
@@ -20,6 +20,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keyList.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('Deleting obsolete cache:', key);
             return caches.delete(key);
           }
         })
@@ -30,7 +31,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Simple network-first fallback strategy for PWA navigation
+  // Navigation: Network-first
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
@@ -40,13 +41,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-first for assets so updates are always seen on normal reload
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        return response || fetch(event.request);
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
       })
       .catch(() => {
-        // Fallback or ignore network aborts
+        return caches.match(event.request);
       })
   );
 });
