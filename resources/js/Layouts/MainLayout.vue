@@ -87,7 +87,7 @@ watch(currentUrl, () => {
                     />
                     <div class="min-w-0 flex-1">
                         <h1 class="text-xs font-black tracking-tight text-slate-900 leading-tight truncate">
-                            {{ settings.store_name || 'TRISNA JAYA' }}
+                            {{ settings.store_name || 'KOPERASI RSIA AISYIYAH' }}
                         </h1>
                         <p class="text-[9px] text-amber-600 font-extrabold uppercase truncate">
                             {{ settings.store_tagline || 'Koperasi Kantin RSIA' }}
@@ -152,7 +152,7 @@ watch(currentUrl, () => {
                                 />
                                 <div class="min-w-0 flex-1">
                                     <h2 class="text-xs font-black tracking-tight text-slate-900 truncate">
-                                        {{ settings.store_name || 'TRISNA JAYA' }}
+                                        {{ settings.store_name || 'KOPERASI RSIA AISYIYAH' }}
                                     </h2>
                                     <p class="text-[9px] text-amber-600 font-extrabold uppercase truncate">
                                         {{ settings.store_tagline || 'Koperasi Kantin RSIA' }}
@@ -264,7 +264,7 @@ watch(currentUrl, () => {
                         />
                         <div class="min-w-0 flex-1">
                             <h1 class="text-xs font-black tracking-tight text-slate-900 leading-tight truncate">
-                                {{ settings.store_name || 'TRISNA JAYA' }}
+                                {{ settings.store_name || 'KOPERASI RSIA AISYIYAH' }}
                             </h1>
                             <p class="text-[9px] text-amber-600 font-extrabold tracking-wider uppercase truncate">
                                 {{ settings.store_tagline || 'Koperasi Kantin RSIA' }}

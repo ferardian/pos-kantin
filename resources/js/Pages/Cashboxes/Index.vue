@@ -38,7 +38,7 @@ const formatRupiah = (val) => {
 const expenseForm = useForm({
     cashbox_id: props.cashboxes[0]?.id || null,
     type: 'out',
-    category: 'Biaya Listrik & Air Toko',
+    category: 'Biaya Operasional & Listrik/Air Kantin',
     amount: '',
     transaction_date: new Date().toISOString().split('T')[0],
     description: '',
@@ -77,7 +77,7 @@ const submitExpense = () => {
             isAddExpenseModalOpen.value = false;
             expenseForm.reset();
             expenseForm.cashbox_id = props.cashboxes[0]?.id || null;
-            expenseForm.category = 'Biaya Listrik & Air Toko';
+            expenseForm.category = 'Biaya Operasional & Listrik/Air Kantin';
             expenseForm.transaction_date = new Date().toISOString().split('T')[0];
         }
     });
@@ -513,7 +513,7 @@ const filteredTransactions = computed(() => {
                             required
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold text-xs focus:outline-none focus:border-rose-500"
                         >
-                            <option value="Biaya Listrik & Air Toko">Biaya Listrik & Air Toko</option>
+                            <option value="Biaya Operasional & Listrik/Air Kantin">Biaya Operasional & Listrik/Air Kantin</option>
                             <option value="Gaji & Upah Karyawan">Gaji & Upah Karyawan</option>
                             <option value="Biaya Operasional & Transport">Biaya Operasional & Bensin / Transport</option>
                             <option value="Konsumsi & Makan Toko">Konsumsi & Uang Makan Staf</option>
@@ -551,7 +551,7 @@ const filteredTransactions = computed(() => {
                         <label class="block text-slate-700 font-bold mb-1">Keterangan / Keperluan</label>
                         <input 
                             v-model="expenseForm.description"
-                            placeholder="Contoh: Pembayaran token listrik PLN toko..."
+                            placeholder="Contoh: Pembayaran token listrik / operasional kantin..."
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-rose-500"
                         />
                     </div>
@@ -616,7 +616,7 @@ const filteredTransactions = computed(() => {
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold text-xs focus:outline-none focus:border-emerald-500"
                         >
                             <option value="Modal Awal / Tambahan">Suntikan Modal / Tambahan Kas</option>
-                            <option value="Pendapatan Jasa / Pasang Listrik">Pendapatan Jasa / Pasang Instalasi Listrik</option>
+                            <option value="Pendapatan Titip / Konsinyasi Kantin">Pendapatan Titip / Konsinyasi Kantin</option>
                             <option value="Pendapatan Sewa Alat">Pendapatan Sewa Alat / Genset</option>
                             <option value="Pemasukan Lain-lain">Pemasukan Lain-lain</option>
                         </select>

@@ -752,8 +752,8 @@ const openReprint = (trx) => {
                     <div v-if="selectedPrintFormat === 'invoice'" class="w-full bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                         <div class="flex justify-between items-start border-b-2 border-slate-900 pb-3">
                             <div>
-                                <h2 class="text-base font-black text-slate-900 uppercase tracking-wide">TRISNA JAYA LISTRIK</h2>
-                                <p class="text-[11px] text-slate-500">Pusat Alat Listrik, Kabel, Lampu & Instalasi Proyek</p>
+                                <h2 class="text-base font-black text-slate-900 uppercase tracking-wide">KOPERASI RSIA AISYIYAH PEKAJANGAN</h2>
+                                <p class="text-[11px] text-slate-500">Kantin & Koperasi RSIA Aisyiyah Pekajangan</p>
                             </div>
                             <div class="text-right">
                                 <span class="text-xs font-black bg-slate-900 text-white px-2 py-0.5 rounded uppercase">FAKTUR PENJUALAN</span>
@@ -806,7 +806,7 @@ const openReprint = (trx) => {
                             <div>
                                 <p class="text-slate-500 font-medium">Hormat Kami,</p>
                                 <div class="h-4"></div>
-                                <p class="font-bold text-slate-800">( TRISNA JAYA LISTRIK )</p>
+                                <p class="font-bold text-slate-800">( KOPERASI RSIA AISYIYAH PEKAJANGAN )</p>
                             </div>
                         </div>
                     </div>
@@ -814,8 +814,8 @@ const openReprint = (trx) => {
                     <!-- Format Struk Kasir Thermal -->
                     <div v-else-if="selectedPrintFormat === 'thermal'" class="w-72 bg-white p-4 font-mono text-[11px] space-y-2 border border-slate-300 shadow-xs">
                         <div class="text-center space-y-1">
-                            <h3 class="font-black text-sm">TRISNA JAYA LISTRIK</h3>
-                            <p class="text-[9px] text-slate-500">Pusat Peralatan Listrik</p>
+                            <h3 class="font-black text-sm">KOPERASI RSIA AISYIYAH PEKAJANGAN</h3>
+                            <p class="text-[9px] text-slate-500">Koperasi RSIA Aisyiyah Pekajangan</p>
                             <p class="text-[9px]">{{ lastTransaction.invoice_number }} &bull; {{ new Date(lastTransaction.created_at).toLocaleDateString('id-ID') }}</p>
                         </div>
                         <div class="border-t border-dashed border-slate-400 my-2"></div>
@@ -840,7 +840,7 @@ const openReprint = (trx) => {
                     <div v-else class="w-full bg-white p-5 font-mono text-[11px] space-y-3 border border-slate-300">
                         <div class="flex justify-between border-b border-dashed border-slate-400 pb-2">
                             <div>
-                                <strong class="text-sm">TRISNA JAYA LISTRIK</strong>
+                                <strong class="text-sm">KOPERASI RSIA AISYIYAH PEKAJANGAN</strong>
                                 <p class="text-[10px]">NOTA PENJUALAN</p>
                             </div>
                             <div class="text-right">

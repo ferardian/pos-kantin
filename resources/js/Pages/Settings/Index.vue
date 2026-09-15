@@ -80,7 +80,7 @@ const submit = () => {
                         <span>Pengaturan Toko & Format Cetak</span>
                     </h1>
                     <p class="text-xs text-slate-500 mt-1 font-medium">
-                        Kelola profil identitas toko listrik, logo usaha, nomor kontak, rekening bank, serta catatan kaki nota kasir & faktur dot matrix.
+                        Kelola profil identitas koperasi kantin RSIA, logo usaha, kontak, serta pengaturan nota kasir.
                     </p>
                 </div>
 
@@ -156,7 +156,7 @@ const submit = () => {
                                     v-model="form.store_name" 
                                     type="text" 
                                     required
-                                    placeholder="Contoh: TRISNA JAYA LISTRIK"
+                                    placeholder="Contoh: KOPERASI RSIA AISYIYAH PEKAJANGAN"
                                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 font-bold focus:outline-none focus:border-amber-500 focus:bg-white transition"
                                 />
                             </div>
@@ -166,7 +166,7 @@ const submit = () => {
                                 <input 
                                     v-model="form.store_tagline" 
                                     type="text" 
-                                    placeholder="Contoh: Pusat Alat Listrik, Kabel, Lampu & Perlengkapan Teknik"
+                                    placeholder="Contoh: Kantin & Koperasi RSIA Aisyiyah Pekajangan"
                                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition"
                                 />
                             </div>
@@ -187,7 +187,7 @@ const submit = () => {
                                     <input 
                                         v-model="form.store_email" 
                                         type="email" 
-                                        placeholder="Contoh: trisnajayalistrik@gmail.com"
+                                        placeholder="Contoh: kantin@rsia-aisyiyah.com"
                                         class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition"
                                     />
                                 </div>
@@ -199,7 +199,7 @@ const submit = () => {
                                     v-model="form.store_address" 
                                     rows="2" 
                                     required
-                                    placeholder="Contoh: Jl. Raya Utama No. 88, Pusat Niaga Listrik, Jakarta"
+                                    placeholder="Contoh: Jl. Raya Pekajangan No. 610, Pekalongan"
                                     class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition text-xs"
                                 ></textarea>
                             </div>
@@ -223,7 +223,7 @@ const submit = () => {
                             <textarea 
                                 v-model="form.bank_info" 
                                 rows="3" 
-                                placeholder="BCA: 8830-123-456 a.n. TRISNA JAYA LISTRIK&#10;MANDIRI: 137-00-9876543-2 a.n. TRISNA JAYA LISTRIK"
+                                placeholder="BCA: 8830-123-456 a.n. KOPERASI RSIA AISYIYAH PEKAJANGAN&#10;MANDIRI: 137-00-9876543-2 a.n. KOPERASI RSIA AISYIYAH PEKAJANGAN"
                                 class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 font-mono text-xs focus:outline-none focus:border-amber-500 focus:bg-white transition"
                             ></textarea>
                             <p class="text-[10px] text-slate-400">Tips: Buat 1 baris per rekening untuk keterbacaan yang rapi saat dicetak.</p>
@@ -396,7 +396,7 @@ const submit = () => {
 
                             <div class="space-y-1 py-1 text-[9px]">
                                 <div class="flex justify-between">
-                                    <span>1x Kabel NYM 2x1.5</span>
+                                    <span>1x Nasi Rames Ayam</span>
                                     <span class="font-bold">Rp 14.500</span>
                                 </div>
                                 <div class="flex justify-between">

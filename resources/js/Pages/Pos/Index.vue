@@ -487,12 +487,12 @@ const buildPrintReceiptHtml = (trx, format, st, user) => {
     const isDotMatrix = format === 'dot_matrix';
     const isReprint = trx.is_reprint;
 
-    const storeName = st.store_name || 'TRISNA JAYA LISTRIK';
-    const storeTagline = st.store_tagline || 'Pusat Alat Listrik, Kabel & Perlengkapan Teknik';
+    const storeName = st.store_name || 'KOPERASI RSIA AISYIYAH PEKAJANGAN';
+    const storeTagline = st.store_tagline || 'Kantin & Koperasi RSIA Aisyiyah Pekajangan';
     const storeAddress = st.store_address || '';
     const storePhone = st.store_phone || '';
     const storeEmail = st.store_email || '';
-    const bankInfo = st.bank_info || 'BCA: 8830-123-456 a.n TRISNA JAYA LISTRIK';
+    const bankInfo = st.bank_info || 'BCA: 8830-123-456 a.n KOPERASI RSIA AISYIYAH PEKAJANGAN';
     const invoiceTerms = st.invoice_terms || 'Barang yang sudah diterima dalam kondisi baik menjadi tanggung jawab pembeli.';
     const receiptFooter = st.receipt_footer || 'Terima kasih atas kunjungan Anda!';
     const cashierName = user?.name || 'Kasir';
@@ -633,7 +633,7 @@ const buildPrintReceiptHtml = (trx, format, st, user) => {
         else if (trx.payment_method === 'tempo') payMethodLabel = `Tempo ${trx.due_date ? '(Jatuh Tempo: ' + trx.due_date + ')' : ''}`;
         else if (trx.payment_method === 'qris') payMethodLabel = 'QRIS';
 
-        const storeNameDisplay = (storeName && storeName.trim() !== '') ? storeName : 'TRISNA JAYA LISTRIK';
+        const storeNameDisplay = (storeName && storeName.trim() !== '') ? storeName : 'KOPERASI RSIA AISYIYAH PEKAJANGAN';
         const storeAddressDisplay = storeAddress || 'Jl. Raya Karanganyar, Kebonsari, Karangsari, Kab. Pekalongan';
         const storePhoneDisplay = storePhone || '+62 815-7345-5951';
         const storeEmailDisplay = storeEmail || 'trisnajaya050@gmail.com';
@@ -940,7 +940,7 @@ const buildPrintReceiptHtml = (trx, format, st, user) => {
                     <thead>
                         <tr>
                             <th style="width: 30px; text-align: center;">#</th>
-                            <th>Deskripsi Produk Listrik</th>
+                            <th>Deskripsi Produk / Menu</th>
                             <th style="width: 60px; text-align: center;">Qty</th>
                             <th style="width: 70px; text-align: center;">Satuan</th>
                             <th style="width: 110px; text-align: right;">Harga Satuan</th>
@@ -2176,8 +2176,8 @@ onUnmounted(() => {
 
                             <div class="text-center border-b border-dashed border-slate-300 pb-2.5">
                                 <img :src="settings.store_logo || '/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain mx-auto mb-1" />
-                                <h2 class="font-black text-xs uppercase tracking-tight">{{ settings.store_name || 'TRISNA JAYA LISTRIK' }}</h2>
-                                <p class="text-[9px] text-slate-600">{{ settings.store_tagline || 'Pusat Alat Listrik & Teknik' }}</p>
+                                <h2 class="font-black text-xs uppercase tracking-tight">{{ settings.store_name || 'KOPERASI RSIA AISYIYAH PEKAJANGAN' }}</h2>
+                                <p class="text-[9px] text-slate-600">{{ settings.store_tagline || 'Kantin & Koperasi RSIA Aisyiyah Pekajangan' }}</p>
                                 <p class="text-[9px] text-slate-600">{{ settings.store_address }}</p>
                                 <p class="text-[9px] text-slate-700 font-bold">Telp/WA: {{ settings.store_phone }}</p>
                             </div>
@@ -2263,7 +2263,7 @@ onUnmounted(() => {
                                 <div class="flex items-start gap-2.5">
                                     <img :src="settings.store_logo || '/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain shrink-0 mt-0.5" />
                                     <div>
-                                        <h2 class="font-black text-base uppercase tracking-tight text-slate-950">{{ settings.store_name || 'TRISNA JAYA LISTRIK' }}</h2>
+                                        <h2 class="font-black text-base uppercase tracking-tight text-slate-950">{{ settings.store_name || 'KOPERASI RSIA AISYIYAH PEKAJANGAN' }}</h2>
                                         <p class="text-[11px] text-slate-600 mt-0.5">Alamat : {{ settings.store_address || 'Jl. Raya Pantura No. 99, Pekalongan' }}</p>
                                         <p class="text-[11px] text-slate-600">Telepon/HP : {{ settings.store_phone || '+62 815 7345 5951' }}</p>
                                         <p class="text-[11px] text-slate-600">Email : {{ settings.store_email || 'trisnajaya050@gmail.com' }}</p>
@@ -2405,8 +2405,8 @@ onUnmounted(() => {
                                 <div class="flex items-center gap-3">
                                     <img :src="settings.store_logo || '/images/logo.png'" alt="Logo" class="w-14 h-14 object-contain" />
                                     <div>
-                                        <h1 class="text-lg font-black text-slate-900 uppercase tracking-tight">{{ settings.store_name || 'TRISNA JAYA LISTRIK' }}</h1>
-                                        <p class="text-xs text-amber-600 font-bold">{{ settings.store_tagline || 'Pusat Alat Listrik, Kabel & Teknik' }}</p>
+                                        <h1 class="text-lg font-black text-slate-900 uppercase tracking-tight">{{ settings.store_name || 'KOPERASI RSIA AISYIYAH PEKAJANGAN' }}</h1>
+                                        <p class="text-xs text-amber-600 font-bold">{{ settings.store_tagline || 'Kantin & Koperasi RSIA Aisyiyah Pekajangan' }}</p>
                                         <p class="text-[11px] text-slate-500 mt-0.5">{{ settings.store_address }}</p>
                                         <p class="text-[11px] text-slate-600 font-semibold">Telp: {{ settings.store_phone }} | Email: {{ settings.store_email }}</p>
                                     </div>
@@ -2459,7 +2459,7 @@ onUnmounted(() => {
                                     <thead class="bg-slate-100 border-b border-slate-200">
                                         <tr class="text-slate-700 font-bold uppercase text-[10px]">
                                             <th class="py-3 px-4 w-10 text-center">#</th>
-                                            <th class="py-3 px-4">Deskripsi Produk Listrik</th>
+                                            <th class="py-3 px-4">Deskripsi Produk / Menu</th>
                                             <th class="py-3 px-4 text-center w-20">Qty</th>
                                             <th class="py-3 px-4 text-center w-24">Satuan</th>
                                             <th class="py-3 px-4 text-right w-32">Harga Satuan</th>
@@ -2521,7 +2521,7 @@ onUnmounted(() => {
                                 <div>
                                     <p class="text-slate-500 font-medium">Hormat Kami,</p>
                                     <div class="h-16"></div>
-                                    <p class="font-black text-slate-900 border-t border-slate-300 pt-1 inline-block min-w-[160px]">{{ settings.store_name || 'TRISNA JAYA LISTRIK' }}</p>
+                                    <p class="font-black text-slate-900 border-t border-slate-300 pt-1 inline-block min-w-[160px]">{{ settings.store_name || 'KOPERASI RSIA AISYIYAH PEKAJANGAN' }}</p>
                                 </div>
                             </div>
                         </div>

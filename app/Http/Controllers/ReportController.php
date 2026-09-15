@@ -219,7 +219,7 @@ class ReportController extends Controller
         $startDateTime = Carbon::parse($startDate)->startOfDay();
         $endDateTime = Carbon::parse($endDate)->endOfDay();
 
-        $fileName = 'Laporan_Penjualan_Trisna_Jaya_' . date('Ymd_His') . '.xls';
+        $fileName = 'Laporan_Penjualan_Kantin_RSIA_' . date('Ymd_His') . '.xls';
 
         $trxQuery = Transaction::whereBetween('created_at', [$startDateTime, $endDateTime]);
         if ($paymentMethod !== 'all') {
@@ -266,7 +266,7 @@ class ReportController extends Controller
             $html .= '</style></head><body>';
 
             // Title & Meta Info
-            $html .= '<div class="title">TRISNA JAYA LISTRIK - LAPORAN KEUANGAN & PENJUALAN TOKO</div>';
+            $html .= '<div class="title">KOPERASI RSIA AISYIYAH PEKAJANGAN - LAPORAN PENJUALAN KANTIN</div>';
             $html .= '<div class="subtitle">Periode: <strong>' . date('d/m/Y', strtotime($startDate)) . ' s/d ' . date('d/m/Y', strtotime($endDate)) . '</strong> | Tanggal Cetak: ' . date('d/m/Y H:i:s') . ' WIB</div><br>';
 
             // SECTION 1: TRANSAKSI PENJUALAN & MARGIN

@@ -525,10 +525,10 @@ const openAddProductModal = () => {
 const autoGenerateSku = () => {
     const count = (props.products?.length || 0) + 1;
     let nextNum = count;
-    let sku = 'ELK-' + String(nextNum).padStart(4, '0');
+    let sku = 'KTN-' + String(nextNum).padStart(4, '0');
     while (props.products?.some(p => p.sku === sku)) {
         nextNum++;
-        sku = 'ELK-' + String(nextNum).padStart(4, '0');
+        sku = 'KTN-' + String(nextNum).padStart(4, '0');
     }
     addProductForm.sku = sku;
 };
@@ -689,7 +689,7 @@ const printBarcodeStickers = () => {
     const unit = barcodeSelectedUnit.value;
     const priceText = formatRupiah(unit?.price_retail);
     const codeValue = (product.barcode || product.sku || '12345678').trim();
-    const brandName = product.brand?.name || 'LISTRIK';
+    const brandName = product.brand?.name || 'KANTIN';
     const productName = product.name;
     const unitName = unit?.unit_name || 'Pcs';
     const count = Math.min(Math.max(Number(barcodePrintCount.value) || 1, 1), 100);
@@ -1286,7 +1286,7 @@ const submitNewUnit = () => {
                         <span>Master Produk & Stok Opname</span>
                     </h1>
                     <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-1">
-                        <span>Katalog barang listrik, audit hitung fisik (Stok Opname), dan pencetakan stiker label barcode.</span>
+                        <span>Katalog produk/menu kantin, audit hitung fisik (Stok Opname), dan pencetakan stiker label barcode.</span>
                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 font-bold text-[11px]">
                             <Package class="w-3 h-3 text-amber-600" />
                             <span>Total Master: <strong>{{ products.length }}</strong> Barang</span>
@@ -1532,7 +1532,7 @@ const submitNewUnit = () => {
                             <thead class="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 shadow-xs">
                                 <tr class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                                     <th class="py-3.5 px-3.5 w-12 text-center bg-slate-50">No</th>
-                                    <th class="py-3.5 px-4 bg-slate-50">Nama Produk Listrik</th>
+                                    <th class="py-3.5 px-4 bg-slate-50">Nama Produk / Menu</th>
                                     <th class="py-3.5 px-4 text-center bg-slate-50">Stok Fisik di Sistem</th>
                                     <th class="py-3.5 px-4 text-center bg-slate-50">Hitungan Fisik Nyata</th>
                                     <th class="py-3.5 px-4 text-center bg-slate-50">Selisih (+/-)</th>
@@ -1697,7 +1697,7 @@ const submitNewUnit = () => {
                         </div>
                         <div>
                             <h2 class="text-sm font-black text-slate-900">Kelola Master Kategori, Merk & Satuan</h2>
-                            <p class="text-xs text-slate-500">Edit nama, perbaiki typo/duplikat, atau hapus kategori, merk, dan satuan produk listrik.</p>
+                            <p class="text-xs text-slate-500">Edit nama, perbaiki typo/duplikat, atau hapus kategori, merk, dan satuan produk kantin.</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2.5 text-xs font-bold">
@@ -2191,7 +2191,7 @@ const submitNewUnit = () => {
                                         {{ barcodeProduct?.name }}
                                     </span>
                                     <span class="text-[6px] text-amber-700 font-black uppercase truncate max-w-[35%] text-right">
-                                        {{ barcodeProduct?.brand?.name || 'LISTRIK' }}
+                                        {{ barcodeProduct?.brand?.name || 'KANTIN' }}
                                     </span>
                                 </div>
 
@@ -2213,7 +2213,7 @@ const submitNewUnit = () => {
                             <template v-else>
                                 <div class="w-full flex items-center justify-between border-b border-slate-200 pb-1 mb-1">
                                     <span class="text-[8px] font-black tracking-tight text-slate-900 uppercase truncate">TRISNA JAYA</span>
-                                    <span class="text-[7px] text-amber-700 font-bold uppercase truncate">{{ barcodeProduct?.brand?.name || 'LISTRIK' }}</span>
+                                    <span class="text-[7px] text-amber-700 font-bold uppercase truncate">{{ barcodeProduct?.brand?.name || 'KANTIN' }}</span>
                                 </div>
 
                                 <div class="text-[9px] font-black text-slate-900 leading-tight line-clamp-2 min-h-[22px] w-full text-center">
@@ -2263,8 +2263,8 @@ const submitNewUnit = () => {
             <div class="bg-white border border-slate-200 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div class="p-5 border-b border-slate-100 flex items-center justify-between">
                     <div>
-                        <h3 class="text-base font-black text-slate-900">Tambah Barang Listrik Baru</h3>
-                        <p class="text-xs text-slate-500">Lengkapi data barang, satuan bertingkat, dan 4 klasifikasi harga.</p>
+                        <h3 class="text-base font-black text-slate-900">Tambah Produk / Menu Kantin Baru</h3>
+                        <p class="text-xs text-slate-500">Lengkapi data produk/menu, satuan, modal HPP, dan harga jual.</p>
                     </div>
                     <button @click="isAddModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
                         <X class="w-5 h-5" />
@@ -2288,7 +2288,7 @@ const submitNewUnit = () => {
                             </div>
                             <input 
                                 v-model="addProductForm.sku" 
-                                placeholder="Auto (misal: ELK-0001)" 
+                                placeholder="Auto (misal: KTN-0001)" 
                                 class="w-full h-9 bg-slate-50 border border-slate-200 rounded-xl px-3 text-slate-900 font-mono font-bold placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:bg-white transition text-xs" 
                             />
                         </div>
@@ -2326,7 +2326,7 @@ const submitNewUnit = () => {
 
                     <div>
                         <label class="block text-slate-600 font-bold mb-1">Nama Barang Lengkap</label>
-                        <input v-model="addProductForm.name" required placeholder="Contoh: Kabel NYM 2 x 1.5 mm Supreme (Putih SPLN)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold text-sm" />
+                        <input v-model="addProductForm.name" required placeholder="Contoh: Nasi Rames Ayam / Air Mineral 600ml / Susu Formula Bayi" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold text-sm" />
                     </div>
 
                     <!-- Searchable Combobox for Kategori & Merk -->
@@ -2544,8 +2544,8 @@ const submitNewUnit = () => {
                     <div class="space-y-3 pt-3 border-t border-slate-100">
                         <div class="flex items-center justify-between">
                             <div>
-                                <h4 class="text-xs font-black uppercase text-slate-900">Satuan & 4 Tingkatan Harga</h4>
-                                <p class="text-[11px] text-slate-500">Tentukan harga untuk Eceran, Tukang, Kontraktor, dan Grosir per satuan.</p>
+                                <h4 class="text-xs font-black uppercase text-slate-900">Satuan & Harga Jual</h4>
+                                <p class="text-[11px] text-slate-500">Tentukan harga modal (HPP) dan harga jual kantin per satuan.</p>
                             </div>
                             <button 
                                 type="button" 
@@ -2553,7 +2553,7 @@ const submitNewUnit = () => {
                                 class="px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900 hover:bg-amber-200 font-bold text-[11px] flex items-center gap-1 transition cursor-pointer"
                             >
                                 <Plus class="w-3.5 h-3.5" />
-                                <span>Tambah Satuan Lain (Misal: Roll / Dus)</span>
+                                <span>Tambah Satuan Lain (Misal: Porsi / Pack / Dus)</span>
                             </button>
                         </div>
 
@@ -2635,7 +2635,7 @@ const submitNewUnit = () => {
             <div class="bg-white border border-slate-200 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div class="p-5 border-b border-slate-100 flex items-center justify-between">
                     <div>
-                        <h3 class="text-base font-black text-slate-900">Edit Data Produk Listrik</h3>
+                        <h3 class="text-base font-black text-slate-900">Edit Data Produk Kantin</h3>
                         <p class="text-xs text-slate-500">Perbarui informasi barang, SKU, barcode, serta harga multi-satuan bertingkat.</p>
                     </div>
                     <button @click="isEditModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
@@ -2907,7 +2907,7 @@ const submitNewUnit = () => {
                     <div class="space-y-3 pt-3 border-t border-slate-100">
                         <div class="flex items-center justify-between">
                             <div>
-                                <h4 class="text-xs font-black uppercase text-slate-900">Satuan & 4 Tingkatan Harga</h4>
+                                <h4 class="text-xs font-black uppercase text-slate-900">Satuan & Harga Jual</h4>
                                 <p class="text-[11px] text-slate-500">Sesuaikan harga untuk Eceran, Tukang, Kontraktor, dan Grosir per satuan.</p>
                             </div>
                             <button 
@@ -3351,7 +3351,7 @@ const submitNewUnit = () => {
                                     v-model="newUnitNameInput"
                                     type="text"
                                     required
-                                    placeholder="Nama satuan baru (misal: Roll / Dus)..."
+                                    placeholder="Nama satuan baru (misal: Porsi / Bungkus / Cup)..."
                                     class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-semibold focus:outline-none focus:border-amber-500 focus:bg-white"
                                 />
                                 <button 

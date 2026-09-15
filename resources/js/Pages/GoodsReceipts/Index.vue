@@ -550,7 +550,7 @@ const openDetail = (receipt) => {
                         <div class="flex items-center justify-between">
                             <div>
                                 <h4 class="text-xs font-black uppercase text-slate-900">Daftar Barang yang Diterima</h4>
-                                <p class="text-[11px] text-slate-500">Pilih barang listrik, satuan masuk, dan jumlah kuantiti.</p>
+                                <p class="text-[11px] text-slate-500">Pilih produk kantin, satuan masuk, dan jumlah kuantiti.</p>
                             </div>
                             <button 
                                 type="button" 
@@ -571,13 +571,13 @@ const openDetail = (receipt) => {
                                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                                     <!-- Searchable Combobox for Product -->
                                     <div class="sm:col-span-6 relative">
-                                        <label class="block text-[10px] font-bold text-slate-500 mb-1">Barang Listrik (Bisa Diketik & Dicari)</label>
+                                        <label class="block text-[10px] font-bold text-slate-500 mb-1">Produk Kantin (Bisa Diketik & Dicari)</label>
                                         <button 
                                             type="button"
                                             @click="activeProductDropdownIndex = (activeProductDropdownIndex === idx ? null : idx)"
                                             class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-900 flex items-center justify-between hover:border-amber-400 transition"
                                         >
-                                            <span class="truncate">{{ getProductById(it.product_id)?.name || 'Pilih Produk Listrik...' }}</span>
+                                            <span class="truncate">{{ getProductById(it.product_id)?.name || 'Pilih Produk Kantin...' }}</span>
                                             <ChevronDown class="w-4 h-4 text-slate-400 shrink-0" />
                                         </button>
 
@@ -719,7 +719,7 @@ const openDetail = (receipt) => {
                 <form @submit.prevent="submitSupplierForm" class="space-y-3.5 text-xs">
                     <div>
                         <label class="block text-slate-700 font-bold mb-1">Nama Supplier / PT / CV *</label>
-                        <input v-model="supplierForm.name" required placeholder="Contoh: PT Kabelindo Mandiri" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold" />
+                        <input v-model="supplierForm.name" required placeholder="Contoh: Suplier Bahan / Distributor Makanan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold" />
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">

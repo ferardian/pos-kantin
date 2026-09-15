@@ -71,12 +71,12 @@ class ProductController extends Controller
         return DB::transaction(function () use ($validated) {
             $sku = trim($validated['sku'] ?? '');
             if ($sku === '') {
-                $lastProduct = Product::where('sku', 'like', 'ELK-%')->orderByDesc('id')->first();
+                $lastProduct = Product::where('sku', 'like', 'KTN-%')->orderByDesc('id')->first();
                 $nextNumber = $lastProduct ? ($lastProduct->id + 1) : (Product::count() + 1);
-                $sku = 'ELK-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+                $sku = 'KTN-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
                 while (Product::where('sku', $sku)->exists()) {
                     $nextNumber++;
-                    $sku = 'ELK-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+                    $sku = 'KTN-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
                 }
             }
 
@@ -406,7 +406,7 @@ class ProductController extends Controller
     public function exportExcel(Request $request)
     {
         $products = Product::with(['category', 'brand', 'units'])->orderBy('name')->get();
-        $fileName = 'Daftar_Harga_Produk_Trisna_Jaya_' . date('Ymd_His') . '.xls';
+        $fileName = 'Daftar_Harga_Kantin_RSIA_' . date('Ymd_His') . '.xls';
 
         $user = Auth::user();
         $canSeeCostPrice = $user->role === 'admin' || \App\Models\Setting::get('kasir_can_see_cost_price', '0') === '1';
@@ -437,7 +437,7 @@ class ProductController extends Controller
             $html .= '.font-bold { font-weight: bold; }';
             $html .= '</style></head><body>';
 
-            $html .= '<div class="title">TRISNA JAYA LISTRIK - DAFTAR HARGA & MASTER BARANG</div>';
+            $html .= '<div class="title">KOPERASI RSIA AISYIYAH PEKAJANGAN - DAFTAR HARGA & MENU KANTIN</div>';
             $html .= '<div class="subtitle">Dicetak pada: ' . date('d/m/Y H:i:s') . ' | Total: ' . count($products) . ' Produk</div>';
             $html .= '<br>';
 
