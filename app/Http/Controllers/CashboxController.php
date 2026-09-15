@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cashbox;
 use App\Models\CashTransaction;
-use App\Models\Debt;
+use App\Models\EmployeeReceivable;
 use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\Transaction;
@@ -34,7 +34,7 @@ class CashboxController extends Controller
         }
 
         // Total Piutang Penjualan Pelanggan
-        $totalDebts = (float) Debt::where('status', '!=', 'paid')->sum('remaining_debt');
+        $totalDebts = (float) EmployeeReceivable::whereIn('status', ['unpaid', 'partial'])->sum('remaining');
 
         // Total Nilai Usaha / Net Worth (Kas + Nilai Stok + Piutang)
         $totalBusinessNetWorth = $totalCashBalance + $inventoryValuation + $totalDebts;

@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\SalesOrder;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -45,7 +44,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'user' => $request->user(),
             'settings' => fn () => Setting::getSettings(),
-            'pendingOrdersCount' => fn () => Auth::check() ? SalesOrder::where('status', 'pending')->count() : 0,
+            'pendingOrdersCount' => 0,
+            'pendingReceivablesCount' => fn () => Auth::check() ? \App\Models\EmployeeReceivable::whereIn('status', ['unpaid', 'partial'])->count() : 0,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

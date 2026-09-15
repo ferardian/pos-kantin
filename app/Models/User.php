@@ -34,10 +34,6 @@ class User extends Authenticatable
         ];
     }
 
-    public function salesOrders()
-    {
-        return $this->hasMany(SalesOrder::class, 'sales_id');
-    }
 
     public function transactions()
     {
@@ -49,8 +45,4 @@ class User extends Authenticatable
         return $this->hasMany(StockAdjustment::class);
     }
 
-    public function debtPayments()
-    {
-        return $this->hasMany(DebtPayment::class, 'collector_id');
-    }
 }

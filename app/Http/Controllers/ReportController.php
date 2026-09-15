@@ -3,12 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Models\Customer;
-use App\Models\Debt;
-use App\Models\DebtPayment;
+use App\Models\EmployeeReceivable;
 use App\Models\Product;
 use App\Models\ProductUnit;
-use App\Models\SalesOrder;
 use App\Models\StockAdjustment;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
@@ -75,8 +72,8 @@ class ReportController extends Controller
         $totalSalesMonth = (float) Transaction::whereMonth('created_at', Carbon::now()->month)
             ->whereYear('created_at', Carbon::now()->year)
             ->sum('total_net');
-        $totalActiveDebts = (float) Debt::where('status', '!=', 'paid')->sum('remaining_debt');
-        $pendingOrdersCount = SalesOrder::where('status', 'pending')->count();
+        $totalActiveDebts = (float) EmployeeReceivable::whereIn('status', ['unpaid', 'partial'])->sum('remaining');
+        $pendingOrdersCount = 0;
 
         // 5. Category Breakdown in Period
         $categoryBreakdown = TransactionItem::select(
@@ -106,16 +103,14 @@ class ReportController extends Controller
             ->orderByDesc('total_omset')
             ->get();
 
-        // 7. Sales Leaderboard
-        $salesLeaderboard = User::where('role', 'sales')
-            ->withCount(['salesOrders as total_orders' => function ($q) use ($startDateTime, $endDateTime) {
-                $q->where('status', 'completed')
-                  ->whereBetween('created_at', [$startDateTime, $endDateTime]);
+        // 7. Kasir Leaderboard
+        $salesLeaderboard = User::whereIn('role', ['kasir', 'admin'])
+            ->withCount(['transactions as total_orders' => function ($q) use ($startDateTime, $endDateTime) {
+                $q->whereBetween('created_at', [$startDateTime, $endDateTime]);
             }])
-            ->withSum(['salesOrders as total_revenue' => function ($q) use ($startDateTime, $endDateTime) {
-                $q->where('status', 'completed')
-                  ->whereBetween('created_at', [$startDateTime, $endDateTime]);
-            }], 'total_amount')
+            ->withSum(['transactions as total_revenue' => function ($q) use ($startDateTime, $endDateTime) {
+                $q->whereBetween('created_at', [$startDateTime, $endDateTime]);
+            }], 'total_net')
             ->get();
 
         // 8. Top Products in Period
@@ -234,9 +229,9 @@ class ReportController extends Controller
             $trxQuery->where('cashier_id', $cashierId);
         }
 
-        $transactions = $trxQuery->with(['cashier', 'customer', 'items.product', 'items.unit'])->latest()->get();
+        $transactions = $trxQuery->with(['cashier', 'items.product', 'items.unit'])->latest()->get();
         $products = Product::with(['category', 'brand', 'baseUnit'])->get();
-        $debts = Debt::with('customer')->where('status', '!=', 'paid')->get();
+        $debts = EmployeeReceivable::with('employee')->whereIn('status', ['unpaid', 'partial'])->get();
 
         $headers = [
             "Content-Type" => "application/vnd.ms-excel; charset=utf-8",
@@ -354,7 +349,7 @@ class ReportController extends Controller
             $html .= '</tbody></table><br>';
 
             // SECTION 2: NILAI ASET PRODUK
-            $html .= '<div class="section-header">2. Rekapitulasi Nilai Aset Stok Persediaan Barang Listrik</div>';
+            $html .= '<div class="section-header">2. Rekapitulasi Nilai Aset Stok Persediaan Barang Kantin</div>';
             $html .= '<table>';
             $html .= '<thead><tr>';
             $html .= '<th class="sub" style="width: 40px;">No</th>';
@@ -397,36 +392,35 @@ class ReportController extends Controller
             $html .= '</tr>';
             $html .= '</tbody></table><br>';
 
-            // SECTION 3: DAFTAR PIUTANG PELANGGAN
-            $html .= '<div class="section-header">3. Daftar Piutang Berjalan Pelanggan</div>';
+            // SECTION 3: DAFTAR PIUTANG KARYAWAN RSIA
+            $html .= '<div class="section-header">3. Daftar Bon / Piutang Karyawan RSIA Aisyiyah</div>';
             $html .= '<table>';
             $html .= '<thead><tr>';
             $html .= '<th class="sub" style="width: 40px;">No</th>';
-            $html .= '<th class="sub" style="width: 200px;">Nama Pelanggan</th>';
+            $html .= '<th class="sub" style="width: 200px;">Nama Karyawan</th>';
+            $html .= '<th class="sub" style="width: 150px;">Unit / Departemen</th>';
             $html .= '<th class="sub" style="width: 140px;">No. Telepon</th>';
-            $html .= '<th class="sub" style="width: 250px;">Alamat</th>';
-            $html .= '<th class="sub" style="width: 150px;">Sisa Piutang (Rp)</th>';
-            $html .= '<th class="sub" style="width: 120px;">Jatuh Tempo</th>';
+            $html .= '<th class="sub" style="width: 200px;">Keterangan / Bon</th>';
+            $html .= '<th class="sub" style="width: 150px;">Sisa Bon (Rp)</th>';
             $html .= '</tr></thead><tbody>';
 
             $noDebt = 1;
             $totalDebtAmount = 0;
             foreach ($debts as $d) {
-                $totalDebtAmount += $d->remaining_debt;
+                $totalDebtAmount += $d->remaining;
                 $html .= '<tr>';
                 $html .= '<td class="center">' . $noDebt++ . '</td>';
-                $html .= '<td class="bold">' . ($d->customer ? htmlspecialchars($d->customer->name) : 'Pelanggan Umum') . '</td>';
-                $html .= '<td>' . ($d->customer ? $d->customer->phone : '-') . '</td>';
-                $html .= '<td>' . ($d->customer ? htmlspecialchars($d->customer->address) : '-') . '</td>';
-                $html .= '<td class="num bold" style="color: #b91c1c;">' . $d->remaining_debt . '</td>';
-                $html .= '<td class="center">' . ($d->due_date ? Carbon::parse($d->due_date)->format('d/m/Y') : 'Tempo Bebas') . '</td>';
+                $html .= '<td class="bold">' . ($d->employee ? htmlspecialchars($d->employee->name) : '-') . '</td>';
+                $html .= '<td>' . ($d->employee ? htmlspecialchars($d->employee->department ?? '-') : '-') . '</td>';
+                $html .= '<td>' . ($d->employee ? ($d->employee->phone ?? '-') : '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($d->notes ?? '-') . '</td>';
+                $html .= '<td class="num bold" style="color: #b91c1c;">' . $d->remaining . '</td>';
                 $html .= '</tr>';
             }
 
             $html .= '<tr class="total-row">';
-            $html .= '<td colspan="4" class="center bold">TOTAL PIUTANG BELUM LUNAS</td>';
+            $html .= '<td colspan="5" class="center bold">TOTAL PIUTANG BELUM LUNAS</td>';
             $html .= '<td class="num bold">' . $totalDebtAmount . '</td>';
-            $html .= '<td></td>';
             $html .= '</tr>';
             $html .= '</tbody></table>';
 

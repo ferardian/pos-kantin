@@ -13,7 +13,7 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::withCount(['transactions', 'salesOrders'])
+        $users = User::withCount(['transactions'])
             ->orderBy('id', 'asc')
             ->get();
 
@@ -29,7 +29,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'phone' => 'nullable|string|max:50',
-            'role' => 'required|in:admin,kasir,sales,gudang',
+            'role' => 'required|in:admin,kasir,gudang',
             'password' => 'required|string|min:6',
             'is_active' => 'boolean',
         ]);
@@ -50,7 +50,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'phone' => 'nullable|string|max:50',
-            'role' => 'required|in:admin,kasir,sales,gudang',
+            'role' => 'required|in:admin,kasir,gudang',
             'password' => 'nullable|string|min:6',
             'is_active' => 'boolean',
         ]);
