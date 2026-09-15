@@ -10,8 +10,18 @@ import {
 } from 'lucide-vue-next';
 
 const props = defineProps({
-    products: Array,
-    customers: Array,
+    products: {
+        type: Array,
+        default: () => [],
+    },
+    employees: {
+        type: Array,
+        default: () => [],
+    },
+    customers: {
+        type: Array,
+        default: () => [],
+    },
     recentTransactions: {
         type: Array,
         default: () => [],
@@ -41,7 +51,11 @@ const focusSearchInput = (selectAll = false) => {
 };
 
 const selectedCategory = ref('all');
-const selectedCustomer = ref(props.customers.find(c => c.tier === 'eceran') || props.customers[0]);
+const selectedCustomer = ref(
+    (props.customers && props.customers.length > 0)
+        ? (props.customers.find(c => c.tier === 'eceran') || props.customers[0])
+        : { id: null, name: 'Pelanggan Umum', tier: 'eceran' }
+);
 const activePriceTier = ref(selectedCustomer.value?.tier || 'eceran'); // Can be overridden
 const cart = ref([]);
 const isMobileCartOpen = ref(false);
@@ -250,7 +264,7 @@ const selectCustomer = (cust) => {
 
 const filteredCustomersModal = computed(() => {
     const q = searchCustomerQuery.value.toLowerCase().trim();
-    const list = [...props.customers].sort((a, b) => {
+    const list = [...(props.customers || [])].sort((a, b) => {
         if (a.tier === 'eceran' && b.tier !== 'eceran') return -1;
         if (b.tier === 'eceran' && a.tier !== 'eceran') return 1;
         return (a.name || '').localeCompare(b.name || '', 'id', { numeric: true });
@@ -275,7 +289,7 @@ const submitNewCustomer = () => {
             searchCustomerQuery.value = '';
 
             setTimeout(() => {
-                const found = props.customers.find(c => c.name.toLowerCase() === addedName) || props.customers[0];
+                const found = (props.customers || []).find(c => c.name.toLowerCase() === addedName) || { id: null, name: 'Pelanggan Umum', tier: 'eceran' };
                 if (found) {
                     selectCustomer(found);
                 }
@@ -338,6 +352,12 @@ const numberToWords = (num) => {
     return (terbilang(num).trim().replace(/\s+/g, ' ') + ' Rupiah');
 };
 
+// Bon / Piutang Karyawan RSIA State
+const isReceivableChecked = ref(false);
+const selectedEmployeeId = ref('');
+const receivableAmount = ref(0);
+const receivableNotes = ref('');
+
 // Open Checkout Modal
 const openCheckout = () => {
     if (cart.value.length === 0) return;
@@ -351,6 +371,10 @@ const openCheckout = () => {
     checkoutForm.total_gross = subtotalGross.value;
     checkoutForm.total_net = totalNet.value;
     checkoutForm.paid_amount = totalNet.value;
+    isReceivableChecked.value = false;
+    selectedEmployeeId.value = '';
+    receivableAmount.value = 0;
+    receivableNotes.value = '';
     isCheckoutOpen.value = true;
 };
 
@@ -409,6 +433,15 @@ const openReprint = (trx) => {
 
 // Submit Checkout
 const submitCheckout = () => {
+    if (isReceivableChecked.value && selectedEmployeeId.value && Number(receivableAmount.value) > 0) {
+        checkoutForm.employee_receivable = {
+            employee_id: selectedEmployeeId.value,
+            amount: Number(receivableAmount.value),
+            notes: receivableNotes.value || 'Bon Kasir POS Kantin',
+        };
+    } else {
+        checkoutForm.employee_receivable = null;
+    }
     checkoutForm.post('/pos/checkout', {
         onSuccess: () => {
             isCheckoutOpen.value = false;
@@ -2006,6 +2039,67 @@ onUnmounted(() => {
                                 type="date" 
                                 class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
                             />
+                        </div>
+                    </div>
+
+                    <!-- Pencatatan Bon / Piutang Karyawan RSIA (Opsional) -->
+                    <div class="p-3.5 bg-emerald-50/60 border border-emerald-200 rounded-2xl space-y-2.5">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input 
+                                type="checkbox" 
+                                v-model="isReceivableChecked"
+                                class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 border-slate-300 cursor-pointer"
+                            />
+                            <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                Catat Bon / Piutang Karyawan RSIA
+                                <span class="text-[9px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Opsional</span>
+                            </span>
+                        </label>
+
+                        <div v-if="isReceivableChecked" class="space-y-2 pt-1">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Pilih Karyawan RSIA *</label>
+                                <select 
+                                    v-model="selectedEmployeeId"
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                                >
+                                    <option value="">-- Pilih Staf / Karyawan --</option>
+                                    <option v-for="emp in (employees || [])" :key="emp.id" :value="emp.id">
+                                        {{ emp.name }} ({{ emp.department || 'Umum' }})
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="block text-[10px] font-bold text-slate-600 uppercase">Nominal Bon / Piutang (Rp) *</label>
+                                    <button 
+                                        type="button"
+                                        v-if="changeAmount > 0"
+                                        @click="receivableAmount = changeAmount; receivableNotes = 'Kembalian Rp ' + changeAmount + ' belum diambil'"
+                                        class="text-[10px] font-bold text-emerald-700 hover:underline cursor-pointer"
+                                    >
+                                        Set Sesuai Kembalian ({{ formatRupiah(changeAmount) }})
+                                    </button>
+                                </div>
+                                <input 
+                                    type="number"
+                                    v-model.number="receivableAmount"
+                                    min="1"
+                                    placeholder="Contoh: 15000"
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:border-emerald-500 font-mono"
+                                />
+                            </div>
+
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Keterangan / Catatan</label>
+                                <input 
+                                    type="text"
+                                    v-model="receivableNotes"
+                                    placeholder="Contoh: Kembalian kurang / Bon sarapan"
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
                         </div>
                     </div>
 
