@@ -1390,10 +1390,10 @@ onUnmounted(() => {
                 @click="handleCatalogAreaClick"
                 class="flex-1 min-h-0 flex flex-col min-w-0 bg-slate-50 border-r border-slate-200 overflow-hidden"
             >
-                <!-- Top Toolbar: Search Bar, Price Tier Switcher & Customer Selector -->
-                <div class="p-3 sm:p-4 bg-white border-b border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 justify-between shadow-xs shrink-0">
+                <!-- Top Toolbar: Search Bar, Customer Selector & Mode Switcher -->
+                <div class="p-2.5 sm:p-3 bg-white border-b border-slate-200 flex flex-wrap items-center gap-2 justify-between shadow-xs shrink-0">
                     <!-- Search Input with Barcode Icon & Quick Clear Button -->
-                    <div class="relative flex-1 min-w-0">
+                    <div class="relative flex-1 min-w-[200px]">
                         <Search class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input 
                             id="product-search-input"
@@ -1405,8 +1405,8 @@ onUnmounted(() => {
                             autocorrect="off"
                             autocapitalize="off"
                             spellcheck="false"
-                            placeholder="Ketik langsung untuk cari barang / scan barcode (F2)..." 
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-16 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition font-medium"
+                            placeholder="Cari nama barang / scan barcode (F2)..." 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-14 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition font-medium"
                         />
                         <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button 
@@ -1422,7 +1422,8 @@ onUnmounted(() => {
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5 sm:pb-0">
+                    <!-- Action Buttons Group (Never squishes search bar) -->
+                    <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
                         <!-- Mobile Cart Toggle Button in Toolbar -->
                         <button 
                             @click="isMobileCartOpen = true"
@@ -1436,12 +1437,11 @@ onUnmounted(() => {
                         <!-- History / Reprint Button (F9) -->
                         <button 
                             @click="isHistoryModalOpen = true"
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer active:scale-95 shrink-0 border border-slate-200"
+                            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer active:scale-95 shrink-0 border border-slate-200"
                             title="Riwayat Transaksi & Cetak Ulang Faktur (Tekan F9)"
                         >
-                            <History class="w-4 h-4 text-amber-600" />
-                            <span class="hidden sm:inline">Riwayat (F9)</span>
-                            <span class="sm:hidden">Riwayat</span>
+                            <History class="w-3.5 h-3.5 text-amber-600" />
+                            <span>Riwayat (F9)</span>
                         </button>
 
                         <!-- Toggle Mode Tablet (Mencegah virtual keyboard otomatis muncul) -->
@@ -1454,47 +1454,25 @@ onUnmounted(() => {
                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100' 
                                     : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
                             ]"
-                            :title="isTouchMode ? 'Mode Tablet Aktif: Virtual keyboard tidak akan muncul otomatis saat pilih barang/kategori. Klik untuk ubah ke Mode PC' : 'Mode PC Aktif: Auto-focus aktif untuk barcode scanner. Klik untuk ubah ke Mode Tablet'"
+                            :title="isTouchMode ? 'Mode Tablet: Keyboard virtual tidak muncul otomatis. Klik untuk ubah ke Mode PC' : 'Mode PC: Auto-focus aktif untuk barcode scanner. Klik untuk ubah ke Mode Tablet'"
                         >
                             <Tablet v-if="isTouchMode" class="w-3.5 h-3.5 text-emerald-600" />
                             <Monitor v-else class="w-3.5 h-3.5 text-slate-500" />
                             <span>{{ isTouchMode ? 'Mode Tab' : 'Mode PC' }}</span>
                         </button>
 
-                        <!-- Price Tier Selector Pill in Header (Retail, Bronze, Gold, Diamond) -->
-                        <div class="flex items-center gap-1 p-1 bg-slate-50 border border-slate-200 rounded-xl shrink-0">
-                            <span class="text-[10px] font-bold text-slate-400 px-1.5">Strata:</span>
-                            <button 
-                                v-for="t in priceTiers" 
-                                :key="t.id"
-                                @click="setPriceTier(t.id)"
-                                :class="[
-                                    activePriceTier === t.id 
-                                        ? 'bg-slate-900 text-white font-black shadow-xs' 
-                                        : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200',
-                                    'px-2 py-1 rounded-lg text-[10px] font-bold uppercase transition cursor-pointer active:scale-95'
-                                ]"
-                            >
-                                {{ t.label }}
-                            </button>
-                        </div>
-
                         <!-- Customer Selector Pill -->
                         <button 
                             @click="isCustomerModalOpen = true"
-                            class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-amber-400 hover:shadow-xs transition text-left cursor-pointer active:scale-95 shrink-0"
+                            class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-amber-400 transition text-left cursor-pointer active:scale-95 shrink-0"
+                            title="Pilih / Ganti Pelanggan"
                         >
-                            <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">
-                                <User class="w-4 h-4" />
+                            <div class="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">
+                                <User class="w-3.5 h-3.5" />
                             </div>
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-1">
-                                    <span class="text-xs font-bold text-slate-800 truncate max-w-[100px]">{{ selectedCustomer?.name }}</span>
-                                    <span :class="[getTierBadgeClass(selectedCustomer?.tier), 'text-[9px] font-black uppercase px-1 py-0.2 rounded border']">
-                                        {{ getTierLabel(selectedCustomer?.tier) }}
-                                    </span>
-                                </div>
-                            </div>
+                            <span class="text-xs font-bold text-slate-800 truncate max-w-[120px]">
+                                {{ selectedCustomer?.name || 'Pelanggan Umum' }}
+                            </span>
                         </button>
                     </div>
                 </div>
