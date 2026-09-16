@@ -6,17 +6,19 @@
     <title>Kantin RSIA Aisyiyah Pekajangan</title>
 
     <!-- PWA & Mobile Web App Meta -->
-    <link rel="manifest" href="/manifest.json?v=3">
+    <link rel="manifest" href="/manifest.json?v=4">
     <meta name="theme-color" content="#059669">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Kantin RSIA">
-    <link rel="apple-touch-icon" href="/images/logo-512.png?v=3">
+    <link rel="apple-touch-icon" href="/images/logo-512.png?v=4">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/images/favicon.png?v=3">
-    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg?v=3">
+    <link rel="shortcut icon" href="/favicon.ico?v=4">
+    <link rel="icon" type="image/png" sizes="64x64" href="/images/favicon.png?v=4">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png?v=4">
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg?v=4">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
