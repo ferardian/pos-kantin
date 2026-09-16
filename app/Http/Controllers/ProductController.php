@@ -365,30 +365,17 @@ class ProductController extends Controller
             $qtyChange = (float)$validated['qty'];
             $oldStock = (float)$product->stock_physical;
 
-            $defaultLoc = \App\Models\Location::where('is_default', true)->first() ?? \App\Models\Location::first();
-            $locId = $validated['location_id'] ?? ($defaultLoc ? $defaultLoc->id : 1);
-            $prodLoc = \App\Models\ProductLocation::firstOrCreate(
-                ['product_id' => $product->id, 'location_id' => $locId],
-                ['stock_physical' => 0, 'min_stock' => 0]
-            );
-
             if ($validated['type'] === 'in') {
                 $product->increment('stock_physical', $qtyChange);
-                $prodLoc->increment('stock_physical', $qtyChange);
                 $finalChange = +$qtyChange;
             } elseif ($validated['type'] === 'out') {
                 $product->decrement('stock_physical', $qtyChange);
-                $prodLoc->decrement('stock_physical', $qtyChange);
                 $finalChange = -$qtyChange;
             } else {
                 // Direct set physical stock (Stok Opname Hitung Fisik)
                 $finalChange = $qtyChange - $oldStock;
                 $product->stock_physical = $qtyChange;
                 $product->save();
-
-                $oldLocStock = (float)$prodLoc->stock_physical;
-                $prodLoc->stock_physical = max(0, $oldLocStock + $finalChange);
-                $prodLoc->save();
             }
 
             StockAdjustment::create([
