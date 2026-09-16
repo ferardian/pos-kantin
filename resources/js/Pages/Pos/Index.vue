@@ -1213,10 +1213,23 @@ const formatRupiah = (val) => {
 // Smart Barcode Scanner Listener & Search Enter Handler
 let barcodeBuffer = '';
 let lastKeyTime = 0;
+let lastScannedCode = '';
+let lastScanTime = 0;
 
-const handleSearchEnter = () => {
+const handleSearchEnter = (e) => {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
     const q = searchQuery.value.trim();
+    barcodeBuffer = ''; // Reset buffer agar window listener tidak memicu duplikasi
     if (!q) return;
+
+    const now = Date.now();
+    // Cegah double scan dari hardware scanner / event ganda dalam rentang 400ms
+    if (q.toLowerCase() === lastScannedCode.toLowerCase() && now - lastScanTime < 400) {
+        return;
+    }
 
     // 1. Cari exact match barcode atau SKU terlebih dahulu
     const exactMatch = props.products.find(p => 
@@ -1225,6 +1238,8 @@ const handleSearchEnter = () => {
     );
 
     if (exactMatch) {
+        lastScannedCode = q;
+        lastScanTime = now;
         addToCart(exactMatch);
         searchQuery.value = '';
         focusSearchInput();
@@ -1233,6 +1248,8 @@ const handleSearchEnter = () => {
 
     // 2. Jika hasil filter hanya 1 barang, langsung masukkan keranjang
     if (filteredProducts.value.length === 1) {
+        lastScannedCode = q;
+        lastScanTime = now;
         addToCart(filteredProducts.value[0]);
         searchQuery.value = '';
         focusSearchInput();
@@ -1307,6 +1324,15 @@ const handleKeyDown = (e) => {
     ) && !isSearchFocused;
     if (isOtherInput) return;
 
+    // PENTING: Jika search input sedang aktif/terfokus, serahkan penanganan Enter sepenuhnya
+    // kepada @keydown.enter.stop pada input agar TIDAK terjadi penambahan ganda (kelipatan 2).
+    if (isSearchFocused) {
+        if (e.key === 'Enter') {
+            barcodeBuffer = '';
+        }
+        return;
+    }
+
     const currentTime = Date.now();
 
     // Global Type-to-Search: Jika kasir mengetik langsung karakter apapun tanpa klik kolom pencarian lebih dulu
@@ -1324,10 +1350,16 @@ const handleKeyDown = (e) => {
         focusSearchInput();
     }
 
-    // Jika scanner mengirimkan tombol Enter di akhir kode
+    // Jika scanner mengirimkan tombol Enter di akhir kode (saat search input tidak sedang fokus)
     if (e.key === 'Enter') {
         if (barcodeBuffer.length >= 3) {
             const scannedCode = barcodeBuffer.trim();
+            const now = Date.now();
+            if (scannedCode.toLowerCase() === lastScannedCode.toLowerCase() && now - lastScanTime < 400) {
+                barcodeBuffer = '';
+                return;
+            }
+
             const product = props.products.find(p => 
                 (p.barcode && p.barcode.toLowerCase() === scannedCode.toLowerCase()) || 
                 (p.sku && p.sku.toLowerCase() === scannedCode.toLowerCase())
@@ -1335,6 +1367,8 @@ const handleKeyDown = (e) => {
 
             if (product) {
                 e.preventDefault();
+                lastScannedCode = scannedCode;
+                lastScanTime = now;
                 addToCart(product);
                 searchQuery.value = '';
                 barcodeBuffer = '';
@@ -1398,7 +1432,7 @@ onUnmounted(() => {
                         <input 
                             id="product-search-input"
                             v-model="searchQuery" 
-                            @keydown.enter.prevent="handleSearchEnter"
+                            @keydown.enter.prevent.stop="handleSearchEnter"
                             @keydown.esc.prevent="clearProductSearch"
                             type="text" 
                             autocomplete="off"
