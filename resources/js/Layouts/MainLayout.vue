@@ -4,7 +4,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { 
     ShoppingCart, ClipboardList, Package, Users, BarChart3, 
     LogOut, CheckCircle, AlertTriangle, Shield,
-    Truck, RotateCcw, Settings, Menu, X, ArrowLeftRight,
+    RotateCcw, Settings, Menu, X, ArrowLeftRight,
     LayoutDashboard, Wallet, UserCog,
     PanelLeftClose, PanelLeftOpen
 } from 'lucide-vue-next';
@@ -32,7 +32,6 @@ const toggleSidebar = () => {
 const allNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'kasir'] },
     { name: 'Kasir POS', href: '/pos', icon: ShoppingCart, roles: ['admin', 'kasir'] },
-    { name: 'Penerimaan Barang', href: '/goods-receipts', icon: Truck, roles: ['admin', 'gudang'] },
     
     
     
