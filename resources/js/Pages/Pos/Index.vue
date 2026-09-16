@@ -2035,9 +2035,10 @@ onUnmounted(() => {
         </div>
 
         <!-- MODAL: Payment Checkout -->
-        <div v-if="isCheckoutOpen" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div class="bg-white border border-slate-200 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl">
-                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div v-if="isCheckoutOpen" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div class="bg-white border border-slate-200 rounded-3xl w-full max-w-xl shadow-2xl flex flex-col max-h-[92vh] my-auto overflow-hidden">
+                <!-- Modal Header (Pinned) -->
+                <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white z-10">
                     <div>
                         <h3 class="text-sm font-bold text-slate-900">Pembayaran Kasir</h3>
                         <p class="text-xs text-slate-500">Pelanggan: <span class="text-slate-900 font-bold">{{ selectedCustomer?.name }}</span> ({{ getTierLabel(activePriceTier) }})</p>
@@ -2047,7 +2048,8 @@ onUnmounted(() => {
                     </button>
                 </div>
 
-                <div class="p-6 space-y-5">
+                <!-- Modal Body (Scrollable) -->
+                <div class="p-4 sm:p-6 space-y-4 sm:space-y-5 flex-1 overflow-y-auto overscroll-contain">
                     <!-- Total Net Display -->
                     <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Tagihan</p>
@@ -2262,6 +2264,10 @@ onUnmounted(() => {
                         </div>
                     </div>
 
+                </div>
+
+                <!-- Modal Footer / Action Button (Pinned) -->
+                <div class="p-4 bg-white border-t border-slate-100 shrink-0">
                     <button 
                         @click="submitCheckout"
                         :disabled="checkoutForm.processing"
