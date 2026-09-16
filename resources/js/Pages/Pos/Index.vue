@@ -6,7 +6,7 @@ import {
     Search, Barcode, ShoppingCart, Plus, Minus, Trash2, User, 
     CreditCard, DollarSign, QrCode, Clock, Printer, CheckCircle, Check,
     AlertCircle, Tag, Layers, ArrowRight, ArrowLeft, X, Phone, MapPin, Sparkles, ChevronDown,
-    History, RotateCcw, FileText
+    History, RotateCcw, FileText, Tablet, Monitor
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -37,12 +37,33 @@ const settings = computed(() => page.props.settings || {});
 // State
 const searchQuery = ref('');
 
+// Cek apakah device menggunakan layar sentuh (Tablet / iPad / Android Tab / HP)
+const isTouchDevice = () => {
+    if (typeof window === 'undefined') return false;
+    return (
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+    );
+};
+
+const isTouchMode = ref(false);
+
+const toggleTouchMode = () => {
+    isTouchMode.value = !isTouchMode.value;
+    localStorage.setItem('pos_touch_mode', isTouchMode.value ? 'true' : 'false');
+};
+
 // Global Search Autofocus Helper
-const focusSearchInput = (selectAll = false) => {
+const focusSearchInput = (selectAll = false, force = false) => {
+    // Pada Mode Tablet / Layar Sentuh, cegah auto-focus agar virtual keyboard tidak terus-menerus muncul
+    if (!force && isTouchMode.value) {
+        return;
+    }
     nextTick(() => {
         const input = document.getElementById('product-search-input');
         if (input) {
-            input.focus();
+            input.focus({ preventScroll: true });
             if (selectAll) {
                 input.select();
             }
@@ -405,7 +426,7 @@ const selectFirstEmployee = () => {
 };
 
 watch(isEmployeeDropdownOpen, (val) => {
-    if (val) {
+    if (val && !isTouchMode.value) {
         nextTick(() => {
             const el = document.getElementById('employee-search-dropdown-input');
             if (el) el.focus();
@@ -1334,13 +1355,24 @@ const handleKeyDown = (e) => {
 };
 
 onMounted(() => {
+    // Deteksi Mode Tablet / Mode PC
+    const savedTouchMode = localStorage.getItem('pos_touch_mode');
+    if (savedTouchMode !== null) {
+        isTouchMode.value = savedTouchMode === 'true';
+    } else {
+        isTouchMode.value = isTouchDevice();
+    }
+
     window.addEventListener('keydown', handleKeyDown);
     document.addEventListener('click', handleClickOutsideEmployee);
-    // Auto focus ke search input saat kasir dibuka
-    focusSearchInput();
-    setTimeout(() => {
+    
+    // Auto focus ke search input saat kasir dibuka (hanya jika mode PC)
+    if (!isTouchMode.value) {
         focusSearchInput();
-    }, 150);
+        setTimeout(() => {
+            focusSearchInput();
+        }, 150);
+    }
 });
 
 onUnmounted(() => {
@@ -1410,6 +1442,23 @@ onUnmounted(() => {
                             <History class="w-4 h-4 text-amber-600" />
                             <span class="hidden sm:inline">Riwayat (F9)</span>
                             <span class="sm:hidden">Riwayat</span>
+                        </button>
+
+                        <!-- Toggle Mode Tablet (Mencegah virtual keyboard otomatis muncul) -->
+                        <button 
+                            @click="toggleTouchMode"
+                            type="button"
+                            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer active:scale-95 shrink-0 border"
+                            :class="[
+                                isTouchMode 
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100' 
+                                    : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                            ]"
+                            :title="isTouchMode ? 'Mode Tablet Aktif: Virtual keyboard tidak akan muncul otomatis saat pilih barang/kategori. Klik untuk ubah ke Mode PC' : 'Mode PC Aktif: Auto-focus aktif untuk barcode scanner. Klik untuk ubah ke Mode Tablet'"
+                        >
+                            <Tablet v-if="isTouchMode" class="w-3.5 h-3.5 text-emerald-600" />
+                            <Monitor v-else class="w-3.5 h-3.5 text-slate-500" />
+                            <span>{{ isTouchMode ? 'Mode Tab' : 'Mode PC' }}</span>
                         </button>
 
                         <!-- Price Tier Selector Pill in Header (Retail, Bronze, Gold, Diamond) -->
