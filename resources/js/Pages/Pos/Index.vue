@@ -2232,16 +2232,27 @@ onUnmounted(() => {
                             </div>
 
                             <div>
-                                <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center justify-between gap-1 flex-wrap mb-1">
                                     <label class="block text-[10px] font-bold text-slate-600 uppercase">Nominal Bon / Piutang (Rp) *</label>
-                                    <button 
-                                        type="button"
-                                        v-if="changeAmount > 0"
-                                        @click="receivableAmount = changeAmount; receivableNotes = 'Kembalian Rp ' + changeAmount + ' belum diambil'"
-                                        class="text-[10px] font-bold text-emerald-700 hover:underline cursor-pointer"
-                                    >
-                                        Set Sesuai Kembalian ({{ formatRupiah(changeAmount) }})
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <button 
+                                            type="button"
+                                            @click="receivableAmount = totalNet; checkoutForm.paid_amount = 0; receivableNotes = 'Belum bayar / uang dibawa dulu'"
+                                            class="text-[10px] font-bold text-emerald-700 hover:underline cursor-pointer"
+                                            title="Set nominal bon penuh dan set uang diterima = 0"
+                                        >
+                                            Set Belum Bayar ({{ formatRupiah(totalNet) }})
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            v-if="changeAmount > 0"
+                                            @click="receivableAmount = changeAmount; receivableNotes = 'Kembalian Rp ' + changeAmount + ' belum diambil'"
+                                            class="text-[10px] font-bold text-amber-700 hover:underline cursor-pointer"
+                                            title="Set nominal bon sebesar uang kembalian yang belum diberikan"
+                                        >
+                                            Set Kembalian ({{ formatRupiah(changeAmount) }})
+                                        </button>
+                                    </div>
                                 </div>
                                 <input 
                                     type="number"
