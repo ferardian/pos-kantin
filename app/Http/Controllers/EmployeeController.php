@@ -2,77 +2,42 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Employee;
+use App\Services\EmployeeService;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 
 class EmployeeController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $query = Employee::withSum(['activeReceivables as total_remaining'], 'remaining')
-            ->orderBy('name');
+        return redirect()->route('receivables.index');
+    }
 
-        if ($request->search) {
-            $query->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('department', 'like', "%{$request->search}%");
+    public function sync()
+    {
+        $result = EmployeeService::syncFromApi();
+        if ($result['success']) {
+            return back()->with('success', $result['message']);
         }
-
-        if ($request->has('active')) {
-            $query->where('is_active', true);
-        }
-
-        $employees = $query->get();
-
-        return Inertia::render('Employees/Index', [
-            'employees' => $employees,
-        ]);
+        return back()->with('error', $result['message']);
     }
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'name'       => 'required|string|max:150',
-            'department' => 'nullable|string|max:100',
-            'phone'      => 'nullable|string|max:20',
-            'is_active'  => 'boolean',
-        ]);
-
-        Employee::create($data);
-
-        return back()->with('success', 'Karyawan berhasil ditambahkan.');
+        return back()->with('error', 'Master data pegawai tersinkronisasi otomatis dari RSIA API.');
     }
 
-    public function update(Request $request, Employee $employee)
+    public function update(Request $request)
     {
-        $data = $request->validate([
-            'name'       => 'required|string|max:150',
-            'department' => 'nullable|string|max:100',
-            'phone'      => 'nullable|string|max:20',
-            'is_active'  => 'boolean',
-        ]);
-
-        $employee->update($data);
-
-        return back()->with('success', 'Data karyawan diperbarui.');
+        return back()->with('error', 'Master data pegawai tersinkronisasi otomatis dari RSIA API.');
     }
 
-    public function destroy(Employee $employee)
+    public function destroy()
     {
-        if ($employee->activeReceivables()->exists()) {
-            return back()->with('error', 'Karyawan masih memiliki piutang yang belum lunas.');
-        }
-
-        $employee->delete();
-
-        return back()->with('success', 'Karyawan dihapus.');
+        return back()->with('error', 'Master data pegawai tersinkronisasi otomatis dari RSIA API.');
     }
 
-    // API: list untuk dropdown di POS
     public function apiList()
     {
-        return response()->json(
-            Employee::where('is_active', true)->orderBy('name')->get(['id', 'name', 'department'])
-        );
+        return response()->json(EmployeeService::getActiveEmployees());
     }
 }

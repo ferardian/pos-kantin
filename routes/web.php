@@ -67,12 +67,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/units/{id}', [ProductController::class, 'destroyUnit'])->name('units.destroy');
     });
 
-    // Karyawan & Piutang
+    // Piutang Karyawan (Data Pegawai tersinkronisasi dari RSIA API)
     Route::middleware('role:kasir')->group(function () {
         Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
-        Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
-        Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
-        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
+        Route::post('/employees/sync', [EmployeeController::class, 'sync'])->name('employees.sync');
         Route::get('/api/employees', [EmployeeController::class, 'apiList'])->name('api.employees');
 
         Route::get('/receivables', [EmployeeReceivableController::class, 'index'])->name('receivables.index');

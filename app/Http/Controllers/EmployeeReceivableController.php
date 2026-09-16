@@ -34,7 +34,7 @@ class EmployeeReceivableController extends Controller
 
         return Inertia::render('Receivables/Index', [
             'receivables' => $receivables,
-            'employees'   => Employee::where('is_active', true)->orderBy('name')->get(['id', 'name', 'department']),
+            'employees'   => \App\Services\EmployeeService::getActiveEmployees(),
             'summary'     => $summary,
         ]);
     }

@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { useForm, router, Head } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import { 
-    ClipboardList, PlusCircle, Search, Wallet, UserCheck, 
+    ClipboardList, PlusCircle, RefreshCw, Search, Wallet, UserCheck, 
     Clock, CheckCircle2, AlertCircle, History, X, ArrowRight,
     Building2, Receipt, Coins
 } from 'lucide-vue-next';
@@ -19,6 +19,18 @@ const statusFilter = ref('all');
 const employeeFilter = ref('all');
 
 // Modals
+
+const isSyncing = ref(false);
+const syncEmployees = () => {
+    isSyncing.value = true;
+    router.post('/employees/sync', {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            isSyncing.value = false;
+        }
+    });
+};
+
 const isAddModalOpen = ref(false);
 const isPayModalOpen = ref(false);
 const isHistoryModalOpen = ref(false);
@@ -118,13 +130,24 @@ const openHistoryModal = (item) => {
                         Monitoring bon belanja dan sisa kembalian yang belum diambil/dibayar karyawan RSIA.
                     </p>
                 </div>
-                <button 
-                    @click="openAddModal"
-                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition shadow-sm hover:shadow active:scale-98 cursor-pointer"
-                >
-                    <PlusCircle class="w-4 h-4" />
-                    Catat Bon Manual
-                </button>
+                <div class="flex items-center gap-2">
+                    <button 
+                        @click="syncEmployees"
+                        :disabled="isSyncing"
+                        class="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm rounded-xl transition shadow-2xs hover:shadow active:scale-98 cursor-pointer disabled:opacity-50"
+                        title="Tarik & perbarui data pegawai terbaru dari RSIA API"
+                    >
+                        <RefreshCw class="w-4 h-4 text-emerald-600" :class="{ 'animate-spin': isSyncing }" />
+                        <span>Sinkron Pegawai RSIA</span>
+                    </button>
+                    <button 
+                        @click="openAddModal"
+                        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition shadow-sm hover:shadow active:scale-98 cursor-pointer"
+                    >
+                        <PlusCircle class="w-4 h-4" />
+                        Catat Bon Manual
+                    </button>
+                </div>
             </div>
 
             <!-- Stats Overview -->
@@ -191,7 +214,7 @@ const openHistoryModal = (item) => {
                     class="py-2.5 px-3.5 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition cursor-pointer text-slate-700"
                 >
                     <option value="all">Semua Karyawan</option>
-                    <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
+                    <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }} ({{ emp.department || 'Umum' }})</option>
                 </select>
             </div>
 

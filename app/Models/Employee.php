@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Employee extends Model
 {
-    protected $fillable = ['name', 'department', 'phone', 'is_active'];
+    protected $fillable = ['nik', 'name', 'department', 'phone', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean'];
 

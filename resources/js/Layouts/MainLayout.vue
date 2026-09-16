@@ -37,7 +37,6 @@ const allNavigation = [
     
     
     { name: 'Master Produk & Stok', href: '/products', icon: Package, roles: ['admin', 'kasir', 'gudang'] },
-    { name: 'Karyawan', href: '/employees', icon: Users, roles: ['admin', 'kasir'] },
     { name: 'Piutang Karyawan', href: '/receivables', icon: ClipboardList, roles: ['admin', 'kasir'] },
     { name: 'Buku Kas & Cashbox', href: '/cashboxes', icon: Wallet, roles: ['admin', 'kasir'] },
     { name: 'Laporan & Omset', href: '/reports', icon: BarChart3, roles: ['admin'] },
