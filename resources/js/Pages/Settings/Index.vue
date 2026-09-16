@@ -25,7 +25,9 @@ const form = useForm({
     receipt_footer: props.settings.receipt_footer || '',
     invoice_terms: props.settings.invoice_terms || '',
     bank_info: props.settings.bank_info || '',
-    default_print_format: props.settings.default_print_format || 'thermal',
+    default_print_format: ['thermal', 'dot_matrix', 'invoice'].includes(props.settings.default_print_format) 
+        ? props.settings.default_print_format 
+        : (String(props.settings.default_print_format || '').toLowerCase().startsWith('thermal') ? 'thermal' : 'thermal'),
     logo: null,
     remove_logo: false,
     kasir_can_access_products: (props.settings.kasir_can_access_products === '1' || props.settings.kasir_can_access_products === 1) ? '1' : '0',

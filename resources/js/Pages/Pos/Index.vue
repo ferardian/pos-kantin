@@ -73,7 +73,17 @@ const newCustomerForm = useForm({
 const isHistoryModalOpen = ref(false);
 const historySearch = ref('');
 const isReceiptOpen = ref(false);
+const normalizePrintFormat = (format) => {
+    if (!format) return 'thermal';
+    const f = String(format).toLowerCase().trim();
+    if (f.startsWith('thermal')) return 'thermal';
+    if (f.includes('dot') || f.includes('matrix')) return 'dot_matrix';
+    if (f.includes('invoice') || f.includes('a4')) return 'invoice';
+    return 'thermal';
+};
+
 const selectedPrintFormat = ref('thermal'); // 'thermal', 'invoice', 'dot_matrix'
+
 const lastTransaction = ref(null);
 
 // Auto-refocus ke search input setiap kali modal checkout / customer / history / receipt ditutup
@@ -427,7 +437,7 @@ const openReprint = (trx) => {
         is_reprint: true, // Mark as reprint copy!
     };
     isHistoryModalOpen.value = false;
-    selectedPrintFormat.value = settings.value.default_print_format || 'thermal';
+    selectedPrintFormat.value = normalizePrintFormat(settings.value?.default_print_format);
     isReceiptOpen.value = true;
 };
 
@@ -464,7 +474,7 @@ const submitCheckout = () => {
                 raw_date: new Date().toLocaleDateString('id-ID'),
                 is_reprint: false,
             };
-            selectedPrintFormat.value = settings.value.default_print_format || 'thermal';
+            selectedPrintFormat.value = normalizePrintFormat(settings.value?.default_print_format);
             clearCart();
             isReceiptOpen.value = true;
         },
@@ -483,8 +493,9 @@ const formatTextWithBreaks = (text) => {
 
 // Standalone Self-Contained Receipt HTML Builder (No external network/CSS dependencies)
 const buildPrintReceiptHtml = (trx, format, st, user) => {
-    const isThermal = format === 'thermal';
-    const isDotMatrix = format === 'dot_matrix';
+    const normFmt = normalizePrintFormat(format);
+    const isThermal = normFmt === 'thermal';
+    const isDotMatrix = normFmt === 'dot_matrix';
     const isReprint = trx.is_reprint;
 
     const storeName = st.store_name || 'KOPERASI RSIA AISYIYAH PEKAJANGAN';
@@ -1148,8 +1159,22 @@ const handleKeyDown = (e) => {
         return;
     }
 
-    // Abaikan jika sedang membuka modal checkout / customer / history / receipt
-    if (isCheckoutOpen.value || isCustomerModalOpen.value || isHistoryModalOpen.value || isReceiptOpen.value) {
+    // Jika sedang membuka modal receipt struk
+    if (isReceiptOpen.value) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            printReceipt();
+            return;
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            isReceiptOpen.value = false;
+            return;
+        }
+        return;
+    }
+
+    // Abaikan jika sedang membuka modal checkout / customer / history
+    if (isCheckoutOpen.value || isCustomerModalOpen.value || isHistoryModalOpen.value) {
         return;
     }
 
@@ -2532,7 +2557,7 @@ onUnmounted(() => {
                 <!-- Modal Bottom Action Bar (Non-Printable) -->
                 <div class="p-4 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 no-print">
                     <div class="text-xs text-slate-500">
-                        Format aktif: <strong class="uppercase text-slate-900">{{ selectedPrintFormat }}</strong>
+                        Format aktif: <strong class="text-slate-900">{{ printFormats.find(f => f.id === selectedPrintFormat)?.label || selectedPrintFormat }}</strong>
                     </div>
 
                     <div class="flex items-center gap-2">

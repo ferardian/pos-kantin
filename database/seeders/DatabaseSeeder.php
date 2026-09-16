@@ -67,7 +67,7 @@ class DatabaseSeeder extends Seeder
             ['key' => 'store_address',      'value' => 'Jl. Pekajangan, Pekalongan'],
             ['key' => 'store_phone',        'value' => '0285-000000'],
             ['key' => 'receipt_footer',     'value' => 'Terima kasih telah berbelanja di Koperasi RSIA Aisyiyah'],
-            ['key' => 'default_print_format', 'value' => 'thermal_58'],
+            ['key' => 'default_print_format', 'value' => 'thermal'],
             ['key' => 'logo_url',           'value' => ''],
         ];
         foreach ($settings as $s) {
