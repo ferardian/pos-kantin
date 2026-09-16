@@ -19,6 +19,13 @@ class ProductUnit extends Model
         'is_base_unit'     => 'boolean',
     ];
 
+    protected $appends = ['selling_price'];
+
+    public function getSellingPriceAttribute()
+    {
+        return $this->price_retail;
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

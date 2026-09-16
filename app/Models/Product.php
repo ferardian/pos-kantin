@@ -18,12 +18,15 @@ class Product extends Model
         'specifications',
         'image_url',
         'description',
+        'consignor_id',
+        'is_consignment',
     ];
 
     protected $casts = [
         'specifications' => 'array',
         'stock_physical' => 'decimal:2',
         'stock_booked' => 'decimal:2',
+        'is_consignment' => 'boolean',
     ];
 
     protected $appends = ['stock_available'];
@@ -31,6 +34,11 @@ class Product extends Model
     public function getStockAvailableAttribute()
     {
         return max(0, (float)$this->stock_physical - (float)$this->stock_booked);
+    }
+
+    public function consignor()
+    {
+        return $this->belongsTo(Consignor::class);
     }
 
     public function category()

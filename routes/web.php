@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CashboxController;
+use App\Http\Controllers\ConsignmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeReceivableController;
@@ -39,6 +40,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/cashboxes', [CashboxController::class, 'store'])->name('cashboxes.store');
         Route::post('/cashboxes/transaction', [CashboxController::class, 'storeTransaction'])->name('cashboxes.transaction');
         Route::post('/cashboxes/transfer', [CashboxController::class, 'transferBalance'])->name('cashboxes.transfer');
+    });
+
+
+    // Titip Jual / Konsinyasi (Jajan Penitip)
+    Route::middleware('role:kasir')->group(function () {
+        Route::get('/consignments', [ConsignmentController::class, 'index'])->name('consignments.index');
+        Route::post('/consignments/batches', [ConsignmentController::class, 'storeBatch'])->name('consignments.batches.store');
+        Route::post('/consignments/batches/{id}/settle', [ConsignmentController::class, 'settleBatch'])->name('consignments.batches.settle');
+        Route::post('/consignments/consignors', [ConsignmentController::class, 'storeConsignor'])->name('consignments.consignors.store');
+        Route::put('/consignments/consignors/{id}', [ConsignmentController::class, 'updateConsignor'])->name('consignments.consignors.update');
+        Route::delete('/consignments/consignors/{id}', [ConsignmentController::class, 'destroyConsignor'])->name('consignments.consignors.destroy');
     });
 
     // POS Kasir Kantin

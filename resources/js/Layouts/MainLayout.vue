@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { 
-    ShoppingCart, ClipboardList, Package, Users, BarChart3, 
+    Store, ShoppingCart, ClipboardList, Package, Users, BarChart3, 
     LogOut, CheckCircle, AlertTriangle, Shield,
     RotateCcw, Settings, Menu, X, ArrowLeftRight,
     LayoutDashboard, Wallet, UserCog,
@@ -32,6 +32,7 @@ const toggleSidebar = () => {
 const allNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'kasir'] },
     { name: 'Kasir POS', href: '/pos', icon: ShoppingCart, roles: ['admin', 'kasir'] },
+    { name: 'Titip Jual (Konsinyasi)', href: '/consignments', icon: Store, roles: ['admin', 'kasir'] },
     
     
     
