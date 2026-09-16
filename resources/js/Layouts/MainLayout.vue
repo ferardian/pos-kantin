@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { 
     ShoppingCart, ClipboardList, Package, Users, BarChart3, 
-    Smartphone, LogOut, CheckCircle, AlertTriangle, Shield,
+    LogOut, CheckCircle, AlertTriangle, Shield,
     Truck, RotateCcw, Settings, Menu, X, ArrowLeftRight,
     LayoutDashboard, Wallet, UserCog,
     PanelLeftClose, PanelLeftOpen
@@ -96,13 +96,6 @@ watch(currentUrl, () => {
             </div>
 
             <div class="flex items-center gap-1.5 shrink-0">
-                <Link 
-                    v-if="user.role === 'admin' || user.role === 'sales'"
-                    class="px-2 py-1 rounded-lg text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 flex items-center gap-1 shrink-0"
-                >
-                    <Smartphone class="w-3.5 h-3.5" />
-                    <span class="hidden sm:inline">Mode Sales</span>
-                </Link>
                 <span class="text-[9px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-700 uppercase shrink-0">
                     {{ user.role }}
                 </span>
@@ -202,17 +195,7 @@ watch(currentUrl, () => {
                                 </Link>
                             </template>
 
-                            <!-- Mobile Mode Link -->
-                            <div v-if="user.role === 'admin' || user.role === 'sales'" class="pt-4 mt-4 border-t border-slate-100">
-                                <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">Tampilan Lapangan</div>
-                                <Link 
-                                    @click="isMobileMenuOpen = false"
-                                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100 transition-all mt-1 shadow-xs"
-                                >
-                                    <Smartphone class="w-4 h-4 text-emerald-600 shrink-0" />
-                                    <span>Mode Sales HP</span>
-                                </Link>
-                            </div>
+
                         </nav>
                     </div>
 
@@ -335,17 +318,7 @@ watch(currentUrl, () => {
                         </Link>
                     </template>
 
-                    <!-- Mobile Mode Link (Admin and Sales) -->
-                    <div v-if="user.role === 'admin' || user.role === 'sales'" :class="isSidebarCollapsed ? 'pt-3 mt-3 border-t border-slate-100 flex justify-center' : 'pt-4 mt-4 border-t border-slate-100'">
-                        <div v-if="!isSidebarCollapsed" class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">Tampilan Lapangan</div>
-                        <Link 
-                            :title="isSidebarCollapsed ? 'Mode Sales HP' : undefined"
-                            :class="isSidebarCollapsed ? 'p-2.5 rounded-xl text-emerald-700 bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100 flex items-center justify-center' : 'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100 transition-all mt-1 shadow-xs'"
-                        >
-                            <Smartphone class="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span v-if="!isSidebarCollapsed">Mode Sales HP</span>
-                        </Link>
-                    </div>
+
                 </nav>
             </div>
 
