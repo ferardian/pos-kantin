@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { useForm, router, Head } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import { 
-    ClipboardList, PlusCircle, RefreshCw, Search, Wallet, UserCheck, 
+    ClipboardList, PlusCircle, RefreshCw, Search, User, Check, ChevronDown, Wallet, UserCheck, 
     Clock, CheckCircle2, AlertCircle, History, X, ArrowRight,
     Building2, Receipt, Coins
 } from 'lucide-vue-next';
@@ -35,6 +35,37 @@ const isAddModalOpen = ref(false);
 const isPayModalOpen = ref(false);
 const isHistoryModalOpen = ref(false);
 const selectedReceivable = ref(null);
+
+
+const employeeSearchQuery = ref('');
+const isEmployeeDropdownOpen = ref(false);
+const selectedEmployeeObj = computed(() => {
+    return (props.employees || []).find(e => e.id === addForm.employee_id) || null;
+});
+const filteredEmployees = computed(() => {
+    const list = props.employees || [];
+    const q = (employeeSearchQuery.value || '').toLowerCase().trim();
+    if (!q) return list;
+    return list.filter(e => 
+        (e.name && e.name.toLowerCase().includes(q)) ||
+        (e.department && e.department.toLowerCase().includes(q)) ||
+        (e.nik && e.nik.toLowerCase().includes(q))
+    );
+});
+const pickEmployee = (emp) => {
+    addForm.employee_id = emp.id;
+    isEmployeeDropdownOpen.value = false;
+    employeeSearchQuery.value = '';
+};
+const clearEmployee = () => {
+    addForm.employee_id = '';
+    employeeSearchQuery.value = '';
+};
+const selectFirstEmployee = () => {
+    if (filteredEmployees.value.length > 0) {
+        pickEmployee(filteredEmployees.value[0]);
+    }
+};
 
 const addForm = useForm({
     employee_id: '',
@@ -79,6 +110,8 @@ const filteredReceivables = computed(() => {
 
 const openAddModal = () => {
     addForm.reset();
+    employeeSearchQuery.value = '';
+    isEmployeeDropdownOpen.value = false;
     isAddModalOpen.value = true;
 };
 
@@ -336,18 +369,88 @@ const openHistoryModal = (item) => {
                     </button>
                 </div>
                 <form @submit.prevent="submitAdd" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Pilih Karyawan *</label>
-                        <select 
-                            v-model="addForm.employee_id" 
-                            required 
-                            class="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Pilih Karyawan RSIA *</label>
+                        
+                        <!-- Trigger Combobox -->
+                        <div 
+                            @click="isEmployeeDropdownOpen = !isEmployeeDropdownOpen"
+                            class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-900 flex items-center justify-between cursor-pointer hover:border-emerald-500 transition shadow-2xs"
+                            :class="{ 'border-emerald-500 ring-2 ring-emerald-500/20': isEmployeeDropdownOpen }"
                         >
-                            <option value="">-- Pilih Karyawan --</option>
-                            <option v-for="emp in employees" :key="emp.id" :value="emp.id">
-                                {{ emp.name }} ({{ emp.department || 'Umum' }})
-                            </option>
-                        </select>
+                            <div class="flex items-center gap-2 truncate">
+                                <User class="w-4 h-4 text-slate-400 shrink-0" />
+                                <span v-if="selectedEmployeeObj" class="font-bold text-slate-900 truncate">
+                                    {{ selectedEmployeeObj.name }} 
+                                    <span class="text-[11px] font-normal text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded ml-1">
+                                        {{ selectedEmployeeObj.department || '-' }}
+                                    </span>
+                                </span>
+                                <span v-else class="text-slate-400">-- Cari Nama / Unit Pegawai RSIA --</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button 
+                                    v-if="addForm.employee_id"
+                                    type="button" 
+                                    @click.stop="clearEmployee"
+                                    class="text-slate-400 hover:text-rose-500 p-0.5 rounded cursor-pointer"
+                                    title="Hapus pilihan"
+                                >
+                                    <X class="w-4 h-4" />
+                                </button>
+                                <ChevronDown class="w-4 h-4 text-slate-400 transition" :class="{ 'rotate-180': isEmployeeDropdownOpen }" />
+                            </div>
+                        </div>
+
+                        <!-- Dropdown Menu with Search Input -->
+                        <div 
+                            v-if="isEmployeeDropdownOpen"
+                            class="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden"
+                        >
+                            <div class="p-2 border-b border-slate-100 bg-slate-50/70 flex items-center gap-2">
+                                <Search class="w-4 h-4 text-slate-400 ml-1.5 shrink-0" />
+                                <input 
+                                    v-model="employeeSearchQuery"
+                                    type="text"
+                                    placeholder="Ketik nama atau unit..."
+                                    class="w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                                    autocomplete="off"
+                                    @keydown.esc="isEmployeeDropdownOpen = false"
+                                    @keydown.enter.prevent="selectFirstEmployee"
+                                />
+                                <button 
+                                    v-if="employeeSearchQuery" 
+                                    type="button"
+                                    @click="employeeSearchQuery = ''" 
+                                    class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                                >
+                                    <X class="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+
+                            <div class="max-h-48 overflow-y-auto divide-y divide-slate-50 p-1">
+                                <div 
+                                    v-for="emp in filteredEmployees" 
+                                    :key="emp.id"
+                                    @click="pickEmployee(emp)"
+                                    class="px-3 py-2 text-xs rounded-xl cursor-pointer transition flex items-center justify-between gap-2 hover:bg-emerald-50/80"
+                                    :class="{ 'bg-emerald-50 font-bold text-emerald-900': emp.id === addForm.employee_id }"
+                                >
+                                    <div class="min-w-0">
+                                        <div class="font-bold text-slate-900 truncate">{{ emp.name }}</div>
+                                        <div class="text-[10px] text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
+                                            <span class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{{ emp.department || 'Umum' }}</span>
+                                            <span v-if="emp.nik" class="text-slate-400">NIP: {{ emp.nik }}</span>
+                                        </div>
+                                    </div>
+                                    <Check v-if="emp.id === addForm.employee_id" class="w-4 h-4 text-emerald-600 shrink-0" />
+                                </div>
+
+                                <div v-if="filteredEmployees.length === 0" class="py-6 text-center text-xs text-slate-400">
+                                    Tidak ada pegawai "{{ employeeSearchQuery }}"
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nominal Bon (Rp) *</label>
