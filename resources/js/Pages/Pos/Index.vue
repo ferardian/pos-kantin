@@ -118,6 +118,7 @@ const checkoutForm = useForm({
     due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     notes: '',
     sales_order_id: null,
+    employee_receivable: null,
 });
 
 // Categories list
@@ -448,6 +449,38 @@ const addQuickMoney = (amount) => {
     checkoutForm.paid_amount = (Number(checkoutForm.paid_amount) || 0) + amount;
 };
 
+const setBonFull = () => {
+    receivableAmount.value = totalNet.value;
+    checkoutForm.paid_amount = 0;
+    receivableNotes.value = 'Belum bayar / uang dibawa dulu';
+};
+
+const setBonChange = () => {
+    if (changeAmount.value > 0) {
+        receivableAmount.value = changeAmount.value;
+        receivableNotes.value = 'Kembalian Rp ' + changeAmount.value + ' belum diambil';
+    } else {
+        receivableAmount.value = totalNet.value;
+        receivableNotes.value = 'Sisa kembalian belum diserahkan';
+    }
+};
+
+watch(isReceivableChecked, (val) => {
+    if (val) {
+        if (!receivableAmount.value || Number(receivableAmount.value) === 0) {
+            if (changeAmount.value > 0) {
+                setBonChange();
+            } else {
+                setBonFull();
+            }
+        }
+    } else {
+        if (checkoutForm.paid_amount === 0) {
+            checkoutForm.paid_amount = totalNet.value;
+        }
+    }
+});
+
 // Filtered History Transactions
 const filteredHistoryTransactions = computed(() => {
     const q = historySearch.value.toLowerCase().trim();
@@ -495,7 +528,15 @@ const openReprint = (trx) => {
 
 // Submit Checkout
 const submitCheckout = () => {
-    if (isReceivableChecked.value && selectedEmployeeId.value && Number(receivableAmount.value) > 0) {
+    if (isReceivableChecked.value) {
+        if (!selectedEmployeeId.value) {
+            alert('Silakan pilih Pegawai RSIA terlebih dahulu!');
+            return;
+        }
+        if (!Number(receivableAmount.value) || Number(receivableAmount.value) <= 0) {
+            alert('Nominal Bon / Piutang harus lebih dari 0!');
+            return;
+        }
         checkoutForm.employee_receivable = {
             employee_id: selectedEmployeeId.value,
             amount: Number(receivableAmount.value),
@@ -503,6 +544,10 @@ const submitCheckout = () => {
         };
     } else {
         checkoutForm.employee_receivable = null;
+        if (checkoutForm.payment_method === 'cash' && Number(checkoutForm.paid_amount) < Number(totalNet.value)) {
+            alert('Jumlah uang diterima kurang dari total tagihan! Jika pegawai belum bayar, silakan centang "Catat Bon / Piutang Karyawan RSIA".');
+            return;
+        }
     }
     checkoutForm.post('/pos/checkout', {
         onSuccess: () => {
@@ -2231,46 +2276,77 @@ onUnmounted(() => {
                                 </div>
                             </div>
 
+                            <!-- Pilihan Cepat / Preset Kondisi Bon -->
                             <div>
-                                <div class="flex items-center justify-between gap-1 flex-wrap mb-1">
-                                    <label class="block text-[10px] font-bold text-slate-600 uppercase">Nominal Bon / Piutang (Rp) *</label>
-                                    <div class="flex items-center gap-2">
-                                        <button 
-                                            type="button"
-                                            @click="receivableAmount = totalNet; checkoutForm.paid_amount = 0; receivableNotes = 'Belum bayar / uang dibawa dulu'"
-                                            class="text-[10px] font-bold text-emerald-700 hover:underline cursor-pointer"
-                                            title="Set nominal bon penuh dan set uang diterima = 0"
-                                        >
-                                            Set Belum Bayar ({{ formatRupiah(totalNet) }})
-                                        </button>
-                                        <button 
-                                            type="button"
-                                            v-if="changeAmount > 0"
-                                            @click="receivableAmount = changeAmount; receivableNotes = 'Kembalian Rp ' + changeAmount + ' belum diambil'"
-                                            class="text-[10px] font-bold text-amber-700 hover:underline cursor-pointer"
-                                            title="Set nominal bon sebesar uang kembalian yang belum diberikan"
-                                        >
-                                            Set Kembalian ({{ formatRupiah(changeAmount) }})
-                                        </button>
-                                    </div>
+                                <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1.5">Pilih Kondisi Bon / Piutang:</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <!-- Tombol 1: Pegawai Belum Bayar Penuh -->
+                                    <button 
+                                        type="button"
+                                        @click="setBonFull"
+                                        class="p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between"
+                                        :class="[
+                                            checkoutForm.paid_amount === 0 && receivableAmount === totalNet
+                                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/20'
+                                                : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50'
+                                        ]"
+                                    >
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs font-bold flex items-center gap-1">
+                                                🏷️ Belum Bayar
+                                            </span>
+                                            <Check v-if="checkoutForm.paid_amount === 0 && receivableAmount === totalNet" class="w-3.5 h-3.5 text-white shrink-0" />
+                                        </div>
+                                        <div class="text-[10px] mt-1 opacity-90 leading-tight">
+                                            Bayar Rp 0 • Bon <span class="font-bold">{{ formatRupiah(totalNet) }}</span>
+                                        </div>
+                                    </button>
+
+                                    <!-- Tombol 2: Kembalian Belum Diambil -->
+                                    <button 
+                                        type="button"
+                                        @click="setBonChange"
+                                        class="p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between"
+                                        :class="[
+                                            changeAmount > 0 && receivableAmount === changeAmount && checkoutForm.paid_amount > totalNet
+                                                ? 'bg-amber-600 text-white border-amber-600 shadow-md ring-2 ring-amber-500/20'
+                                                : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50'
+                                        ]"
+                                    >
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs font-bold flex items-center gap-1">
+                                                ↩️ Sisa Kembalian
+                                            </span>
+                                            <Check v-if="changeAmount > 0 && receivableAmount === changeAmount && checkoutForm.paid_amount > totalNet" class="w-3.5 h-3.5 text-white shrink-0" />
+                                        </div>
+                                        <div class="text-[10px] mt-1 opacity-90 leading-tight">
+                                            {{ changeAmount > 0 ? 'Kembalian ' + formatRupiah(changeAmount) : 'Sesuai uang kembali' }}
+                                        </div>
+                                    </button>
                                 </div>
-                                <input 
-                                    type="number"
-                                    v-model.number="receivableAmount"
-                                    min="1"
-                                    placeholder="Contoh: 15000"
-                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:border-emerald-500 font-mono"
-                                />
                             </div>
 
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Keterangan / Catatan</label>
-                                <input 
-                                    type="text"
-                                    v-model="receivableNotes"
-                                    placeholder="Contoh: Kembalian kurang / Bon sarapan"
-                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-emerald-500"
-                                />
+                            <!-- Input Detail Nominal & Catatan -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Nominal Bon (Rp) *</label>
+                                    <input 
+                                        type="number"
+                                        v-model.number="receivableAmount"
+                                        min="1"
+                                        placeholder="Contoh: 8000"
+                                        class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:border-emerald-500 font-mono"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Keterangan / Catatan</label>
+                                    <input 
+                                        type="text"
+                                        v-model="receivableNotes"
+                                        placeholder="Contoh: Belum bayar / uang dibawa dulu"
+                                        class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-emerald-500"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

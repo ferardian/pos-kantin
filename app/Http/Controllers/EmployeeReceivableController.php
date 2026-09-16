@@ -81,6 +81,24 @@ class EmployeeReceivableController extends Controller
                 'remaining' => $newRemaining,
                 'status'    => $newRemaining <= 0 ? 'paid' : 'partial',
             ]);
+
+            // Catat uang pelunasan ke kotak kas
+            $cashbox = \App\Models\Cashbox::where('is_default', true)->first()
+                ?? \App\Models\Cashbox::first();
+            if ($cashbox) {
+                $cashbox->increment('balance', $data['amount']);
+                \App\Models\CashTransaction::create([
+                    'cashbox_id'       => $cashbox->id,
+                    'user_id'          => $request->user()->id,
+                    'type'             => 'in',
+                    'category'         => 'Pelunasan Bon Pegawai',
+                    'amount'           => $data['amount'],
+                    'transaction_date' => now()->toDateString(),
+                    'reference_type'   => 'receivable_payment',
+                    'reference_id'     => $receivable->id,
+                    'description'      => "Pelunasan bon " . ($receivable->employee?->name ?? 'Pegawai'),
+                ]);
+            }
         });
 
         return back()->with('success', 'Pelunasan piutang berhasil dicatat.');
