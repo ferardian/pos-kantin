@@ -135,7 +135,7 @@ class ReportController extends Controller
 
         // 9. Detailed Sales Transactions for Period
         $salesTransactions = (clone $trxQuery)
-            ->with(['cashier', 'customer', 'items.product', 'items.unit'])
+            ->with(['cashier', 'receivable.employee', 'items.product', 'items.unit'])
             ->latest()
             ->get()
             ->map(function ($trx) {
@@ -150,6 +150,12 @@ class ReportController extends Controller
                 $trx->estimated_cost = $trxCost;
                 $trx->estimated_profit = $profit;
                 $trx->profit_margin = $margin;
+
+                $employee = $trx->receivable->first()?->employee;
+                $trx->customer = (object) [
+                    'name' => $employee ? $employee->name : 'Pelanggan Umum',
+                    'tier' => $employee ? ($employee->department ? 'Karyawan (' . $employee->department . ')' : 'Karyawan') : 'Umum',
+                ];
 
                 return $trx;
             });
@@ -229,7 +235,7 @@ class ReportController extends Controller
             $trxQuery->where('cashier_id', $cashierId);
         }
 
-        $transactions = $trxQuery->with(['cashier', 'items.product', 'items.unit'])->latest()->get();
+        $transactions = $trxQuery->with(['cashier', 'receivable.employee', 'items.product', 'items.unit'])->latest()->get();
         $products = Product::with(['category', 'brand', 'baseUnit'])->get();
         $debts = EmployeeReceivable::with('employee')->whereIn('status', ['unpaid', 'partial'])->get();
 
@@ -308,12 +314,14 @@ class ReportController extends Controller
                 }
 
                 $itemsString = htmlspecialchars(implode('; ', $itemDetails));
-                $tierLabel = $t->customer ? ucfirst($t->customer->tier) : 'Retail';
+                $employee = $t->receivable->first()?->employee;
+                $customerName = $employee ? $employee->name : 'Pelanggan Umum';
+                $tierLabel = $employee ? ($employee->department ? 'Karyawan (' . $employee->department . ')' : 'Karyawan') : 'Umum';
                 $trxProfit = max(0, $t->total_net - $trxCost);
                 $trxMargin = $t->total_net > 0 ? round(($trxProfit / $t->total_net) * 100, 1) : 0;
 
                 $sumGross += $t->total_gross;
-                $sumDisc += $t->discount_amount;
+                $sumDisc += ($t->discount ?? 0);
                 $sumNet += $t->total_net;
                 $sumCost += $trxCost;
                 $sumProfit += $trxProfit;
@@ -323,12 +331,12 @@ class ReportController extends Controller
                 $html .= '<td class="center">' . $t->created_at->format('d/m/Y H:i') . '</td>';
                 $html .= '<td class="bold">' . $t->invoice_number . '</td>';
                 $html .= '<td>' . ($t->cashier ? $t->cashier->name : 'Sistem') . '</td>';
-                $html .= '<td>' . ($t->customer ? $t->customer->name : 'Pelanggan Umum') . '</td>';
+                $html .= '<td>' . htmlspecialchars($customerName) . '</td>';
                 $html .= '<td class="center">' . $tierLabel . '</td>';
                 $html .= '<td>' . $itemsString . '</td>';
                 $html .= '<td class="center bold">' . strtoupper($t->payment_method) . '</td>';
                 $html .= '<td class="num">' . $t->total_gross . '</td>';
-                $html .= '<td class="num">' . $t->discount_amount . '</td>';
+                $html .= '<td class="num">' . ($t->discount ?? 0) . '</td>';
                 $html .= '<td class="num bold" style="color: #166534;">' . $t->total_net . '</td>';
                 $html .= '<td class="num">' . $trxCost . '</td>';
                 $html .= '<td class="num bold" style="color: #0369a1;">' . $trxProfit . '</td>';

@@ -37,4 +37,14 @@ class Transaction extends Model
     {
         return $this->hasMany(EmployeeReceivable::class);
     }
+
+    public function getCustomerAttribute()
+    {
+        $employee = $this->receivable->first()?->employee;
+        return (object) [
+            'id' => $employee?->id,
+            'name' => $employee ? $employee->name : 'Pelanggan Umum',
+            'tier' => $employee ? ($employee->department ? 'Karyawan (' . $employee->department . ')' : 'Karyawan') : 'Umum',
+        ];
+    }
 }
