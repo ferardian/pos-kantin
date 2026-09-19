@@ -1,9 +1,7 @@
 <script setup>
-import { ref } from 'vue';
 import { useForm, Head } from '@inertiajs/vue3';
 import { 
-    Lock, User, ArrowRight, ShieldCheck, 
-    Sparkles, Shield, ShoppingBag
+    Lock, User, ArrowRight, ShieldCheck 
 } from 'lucide-vue-next';
 
 const form = useForm({
@@ -14,17 +12,6 @@ const form = useForm({
 
 const submit = () => {
     form.post('/login');
-};
-
-const activeDemo = ref(null);
-
-const fillDemo = (username, password, role) => {
-    activeDemo.value = role;
-    form.username = username;
-    form.password = password;
-    setTimeout(() => {
-        submit();
-    }, 200);
 };
 </script>
 
@@ -53,71 +40,8 @@ const fillDemo = (username, password, role) => {
                 </div>
             </div>
 
-            <!-- Quick Demo Login Buttons (Development Helper) -->
-            <div class="bg-gradient-to-br from-slate-50 to-emerald-50/40 rounded-2xl p-3.5 border border-emerald-100/80 space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                        <Sparkles class="w-3.5 h-3.5 text-amber-500" />
-                        Demo Login Cepat
-                    </span>
-                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
-                        1-Klik Masuk
-                    </span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <!-- Admin Button -->
-                    <button 
-                        type="button"
-                        @click="fillDemo('admin', 'password123', 'admin')"
-                        :disabled="form.processing"
-                        class="p-2.5 bg-white hover:bg-emerald-600 border border-slate-200 hover:border-emerald-600 text-slate-800 hover:text-white rounded-xl text-left transition shadow-xs group cursor-pointer active:scale-97 flex flex-col justify-between"
-                    >
-                        <div class="flex items-center justify-between w-full mb-1">
-                            <span class="p-1 rounded-lg bg-emerald-100 text-emerald-800 group-hover:bg-white group-hover:text-emerald-700 transition">
-                                <Shield class="w-3.5 h-3.5" />
-                            </span>
-                            <span class="text-[9px] font-black uppercase text-emerald-600 group-hover:text-emerald-100">
-                                Full Akses
-                            </span>
-                        </div>
-                        <div>
-                            <div class="text-xs font-black leading-tight">Admin Koperasi</div>
-                            <div class="text-[10px] opacity-70 font-mono mt-0.5">username: admin</div>
-                        </div>
-                    </button>
-
-                    <!-- Kasir Button -->
-                    <button 
-                        type="button"
-                        @click="fillDemo('kasir', 'kasir123', 'kasir')"
-                        :disabled="form.processing"
-                        class="p-2.5 bg-white hover:bg-emerald-600 border border-slate-200 hover:border-emerald-600 text-slate-800 hover:text-white rounded-xl text-left transition shadow-xs group cursor-pointer active:scale-97 flex flex-col justify-between"
-                    >
-                        <div class="flex items-center justify-between w-full mb-1">
-                            <span class="p-1 rounded-lg bg-amber-100 text-amber-800 group-hover:bg-white group-hover:text-emerald-700 transition">
-                                <ShoppingBag class="w-3.5 h-3.5" />
-                            </span>
-                            <span class="text-[9px] font-black uppercase text-amber-600 group-hover:text-emerald-100">
-                                POS Kasir
-                            </span>
-                        </div>
-                        <div>
-                            <div class="text-xs font-black leading-tight">Kasir Kantin</div>
-                            <div class="text-[10px] opacity-70 font-mono mt-0.5">username: kasir</div>
-                        </div>
-                    </button>
-                </div>
-            </div>
-
-            <div class="relative flex py-1 items-center">
-                <div class="flex-grow border-t border-slate-200"></div>
-                <span class="flex-shrink mx-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">atau login username</span>
-                <div class="flex-grow border-t border-slate-200"></div>
-            </div>
-
-            <!-- Login Form -->
-            <form @submit.prevent="submit" class="space-y-4 text-xs">
+            <!-- Official Login Form -->
+            <form @submit.prevent="submit" class="space-y-4 text-xs pt-1">
                 <div>
                     <label class="block text-slate-700 font-bold mb-1.5">Username Pengguna</label>
                     <div class="relative">
@@ -126,9 +50,9 @@ const fillDemo = (username, password, role) => {
                             v-model="form.username" 
                             type="text" 
                             required 
-                            placeholder="admin atau kasir"
+                            placeholder="Masukkan username akun Anda"
                             autocomplete="username"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition shadow-xs"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition shadow-xs font-semibold"
                         />
                     </div>
                 </div>

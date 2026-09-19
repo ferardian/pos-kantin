@@ -55,21 +55,6 @@ class AuthController extends Controller
         ]);
     }
 
-    public function quickLogin(Request $request)
-    {
-        $request->validate(['role' => 'required|string']);
-        $user = User::where('role', $request->role)->where('is_active', true)->first();
-        if ($user) {
-            Auth::login($user);
-            $request->session()->regenerate();
-            if ($user->role === 'sales') {
-                return redirect()->route('sales.index');
-            }
-            return redirect()->route('pos.index');
-        }
-        return back();
-    }
-
     public function logout(Request $request)
     {
         Auth::logout();
