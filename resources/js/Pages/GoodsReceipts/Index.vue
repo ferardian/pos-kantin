@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { useForm, router, Head } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useForm, router, Head, usePage } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import { 
     Truck, Plus, Search, PackageCheck, Calendar, 
@@ -37,6 +37,70 @@ const supplierSearchQuery = ref('');
 // Searchable Product Combobox per row state
 const activeProductDropdownIndex = ref(null);
 const productSearchQueries = ref({});
+
+const page = usePage();
+const supplierComboboxRef = ref(null);
+const isCreatingSupplier = ref(false);
+
+// Floating Toast Notification
+const toast = ref({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+});
+let toastTimeout = null;
+const showToast = (type, title, message) => {
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toast.value = { show: true, type, title, message };
+    toastTimeout = setTimeout(() => {
+        toast.value.show = false;
+    }, 4000);
+};
+
+// Listen to flash messages from server
+watch(() => page.props.flash, (flash) => {
+    if (flash?.success) {
+        showToast('success', 'Berhasil', flash.success);
+    } else if (flash?.error) {
+        showToast('error', 'Perhatian', flash.error);
+    }
+}, { deep: true });
+
+// Click Outside and Keydown Handlers
+const handleDocumentClick = (event) => {
+    // Tutup dropdown supplier jika klik di luar
+    if (isSupplierDropdownOpen.value && supplierComboboxRef.value) {
+        if (!supplierComboboxRef.value.contains(event.target)) {
+            isSupplierDropdownOpen.value = false;
+        }
+    }
+
+    // Tutup dropdown produk baris jika klik di luar
+    if (activeProductDropdownIndex.value !== null) {
+        const productComboboxEl = event.target.closest('[data-product-combobox]');
+        if (!productComboboxEl) {
+            activeProductDropdownIndex.value = null;
+        }
+    }
+};
+
+const handleKeyDown = (event) => {
+    if (event.key === 'Escape') {
+        isSupplierDropdownOpen.value = false;
+        activeProductDropdownIndex.value = null;
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('click', handleDocumentClick);
+    document.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleDocumentClick);
+    document.removeEventListener('keydown', handleKeyDown);
+});
 
 // Form Penerimaan Barang
 const form = useForm({
@@ -123,27 +187,40 @@ const selectSupplier = (supplier) => {
 
 const createAndSelectSupplier = () => {
     const name = supplierSearchQuery.value.trim();
-    if (!name) return;
+    if (!name || isCreatingSupplier.value) return;
 
+    isCreatingSupplier.value = true;
     router.post('/suppliers', { name }, {
         preserveScroll: true,
-        onSuccess: (page) => {
-            const newlyCreated = page.props.suppliers?.find(s => s.name.toLowerCase() === name.toLowerCase());
+        onSuccess: (pageRes) => {
+            const newlyCreated = pageRes.props.suppliers?.find(s => s.name.toLowerCase() === name.toLowerCase());
             if (newlyCreated) {
                 form.supplier_id = newlyCreated.id;
                 form.supplier_name = newlyCreated.name;
             }
             isSupplierDropdownOpen.value = false;
             supplierSearchQuery.value = '';
+            showToast('success', 'Supplier Berhasil Ditambahkan', `Supplier "${newlyCreated?.name || name}" berhasil didaftarkan dan langsung dipilih.`);
         },
+        onError: (errs) => {
+            showToast('error', 'Gagal Menambahkan Supplier', Object.values(errs)[0] || 'Terjadi kendala saat mendaftarkan supplier.');
+        },
+        onFinish: () => {
+            isCreatingSupplier.value = false;
+        }
     });
 };
 
 const submitSupplierForm = () => {
     supplierForm.post('/suppliers', {
         onSuccess: () => {
+            const addedName = supplierForm.name;
             isAddSupplierModalOpen.value = false;
+            showToast('success', 'Supplier Berhasil Ditambahkan', `Supplier "${addedName}" berhasil disimpan.`);
             supplierForm.reset();
+        },
+        onError: (errs) => {
+            showToast('error', 'Gagal Menambahkan Supplier', Object.values(errs)[0] || 'Periksa kembali data input.');
         }
     });
 };
@@ -639,7 +716,7 @@ const submitReject = () => {
                     <!-- Form Grid Header: Supplier, Lokasi Masuk, No SJ, Tanggal -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                         <!-- Searchable Supplier Dropdown Combobox -->
-                        <div class="relative">
+                        <div class="relative" ref="supplierComboboxRef">
                             <label class="block text-slate-700 font-bold mb-1">Supplier / Distributor *</label>
                             <button 
                                 type="button"
@@ -686,10 +763,15 @@ const submitReject = () => {
                                     <div 
                                         v-if="!isSupplierExactMatch && supplierSearchQuery.trim()" 
                                         @click="createAndSelectSupplier"
-                                        class="p-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 border border-amber-200 mt-1"
+                                        :class="[
+                                            isCreatingSupplier ? 'opacity-70 pointer-events-none' : 'cursor-pointer hover:bg-amber-100',
+                                            'p-2 bg-amber-50 text-amber-900 rounded-xl font-bold text-xs flex items-center gap-1.5 border border-amber-200 mt-1 transition'
+                                        ]"
                                     >
-                                        <PlusCircle class="w-4 h-4 text-amber-700" />
-                                        <span>+ Daftarkan Supplier: "<strong>{{ supplierSearchQuery }}</strong>"</span>
+                                        <div v-if="isCreatingSupplier" class="w-3.5 h-3.5 border-2 border-amber-700 border-t-transparent rounded-full animate-spin"></div>
+                                        <PlusCircle v-else class="w-4 h-4 text-amber-700 shrink-0" />
+                                        <span v-if="isCreatingSupplier">Mendaftarkan "{{ supplierSearchQuery }}"...</span>
+                                        <span v-else>+ Daftarkan Supplier: "<strong>{{ supplierSearchQuery }}</strong>"</span>
                                     </div>
                                 </div>
                             </div>
@@ -753,7 +835,7 @@ const submitReject = () => {
                             >
                                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                                     <!-- Searchable Combobox for Product -->
-                                    <div class="sm:col-span-6 relative">
+                                    <div class="sm:col-span-6 relative" data-product-combobox>
                                         <label class="block text-[10px] font-bold text-slate-500 mb-1">Produk Kantin (Cari Nama / Barcode)</label>
                                         <button 
                                             type="button"
@@ -1107,5 +1189,37 @@ const submitReject = () => {
                 </form>
             </div>
         </div>
+        <!-- Global Floating Toast Notification (Z-Index 9999 on top of all modals) -->
+        <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="opacity-0 -translate-y-4 scale-95"
+            enter-to-class="opacity-100 translate-y-0 scale-100"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="opacity-100 translate-y-0 scale-100"
+            leave-to-class="opacity-0 -translate-y-4 scale-95"
+        >
+            <div 
+                v-if="toast.show" 
+                class="fixed top-6 right-6 z-[9999] max-w-sm w-full shadow-2xl rounded-2xl p-4 border flex items-start gap-3 backdrop-blur-md transition-all pointer-events-auto"
+                :class="[
+                    toast.type === 'success' ? 'bg-emerald-900/95 text-white border-emerald-500/50 shadow-emerald-950/40' : 
+                    toast.type === 'error' ? 'bg-rose-900/95 text-white border-rose-500/50 shadow-rose-950/40' : 
+                    'bg-slate-900/95 text-white border-slate-700/50 shadow-slate-950/40'
+                ]"
+            >
+                <CheckCircle2 v-if="toast.type === 'success'" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <AlertCircle v-else-if="toast.type === 'error'" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div class="flex-1 min-w-0">
+                    <h5 class="text-xs font-black tracking-wide">{{ toast.title }}</h5>
+                    <p class="text-[11px] text-slate-200 mt-0.5 leading-snug">{{ toast.message }}</p>
+                </div>
+                <button 
+                    @click="toast.show = false" 
+                    class="text-slate-400 hover:text-white p-0.5 rounded-lg hover:bg-white/10 transition cursor-pointer"
+                >
+                    <X class="w-4 h-4" />
+                </button>
+            </div>
+        </Transition>
     </MainLayout>
 </template>

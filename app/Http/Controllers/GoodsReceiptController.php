@@ -63,7 +63,38 @@ class GoodsReceiptController extends Controller
             'address' => 'nullable|string',
         ]);
 
-        $supplier = Supplier::create($validated);
+        $name = trim($validated['name']);
+
+        // Cegah duplikasi supplier (case-insensitive)
+        $supplier = Supplier::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($name)])->first();
+
+        if ($supplier) {
+            $dirty = false;
+            if (!empty($validated['phone']) && empty($supplier->phone)) {
+                $supplier->phone = $validated['phone'];
+                $dirty = true;
+            }
+            if (!empty($validated['contact_person']) && empty($supplier->contact_person)) {
+                $supplier->contact_person = $validated['contact_person'];
+                $dirty = true;
+            }
+            if (!empty($validated['address']) && empty($supplier->address)) {
+                $supplier->address = $validated['address'];
+                $dirty = true;
+            }
+            if ($dirty) {
+                $supplier->save();
+            }
+
+            return redirect()->back()->with('success', "Supplier \"{$supplier->name}\" sudah terdaftar dan siap digunakan.");
+        }
+
+        $supplier = Supplier::create([
+            'name' => $name,
+            'phone' => $validated['phone'] ?? null,
+            'contact_person' => $validated['contact_person'] ?? null,
+            'address' => $validated['address'] ?? null,
+        ]);
 
         return redirect()->back()->with('success', "Supplier \"{$supplier->name}\" berhasil ditambahkan.");
     }
