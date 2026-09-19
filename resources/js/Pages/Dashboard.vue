@@ -151,7 +151,7 @@ const reloadPage = () => {
                             <h3 class="text-lg sm:text-2xl font-black text-slate-900">
                                 {{ todayItemsCount }}
                             </h3>
-                            <p class="text-[10px] text-slate-400 font-medium mt-0.5">Kuantiti Barang Listrik</p>
+                            <p class="text-[10px] text-slate-400 font-medium mt-0.5">Kuantiti Barang Kantin</p>
                         </div>
                     </div>
 

@@ -2,7 +2,7 @@ import { createApp, h } from 'vue';
 import { createInertiaApp, Head, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 
-const appName = 'Trisna Jaya Listrik';
+const appName = 'Kantin RSIA Aisyiyah';
 
 // Ensure all Inertia visits are prefixed with /pos-kantin when running under subpath
 router.on('before', (event) => {
@@ -17,7 +17,7 @@ router.on('before', (event) => {
 
 
 createInertiaApp({
-    title: (title) => title ? `${title} - ${appName}` : `${appName} - POS & Sales System`,
+    title: (title) => title ? `${title} - ${appName}` : `${appName} - POS Kantin`,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) });

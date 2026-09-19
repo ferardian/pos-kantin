@@ -510,7 +510,7 @@ const buildPickingSlipHtml = (order) => {
     const rawDate = order.order_date ? new Date(order.order_date).toLocaleDateString('id-ID') : new Date().toLocaleDateString('id-ID');
     const items = order.items || [];
     const storeLogo = props.settings?.store_logo || '/pos-kantin/images/logo.png';
-    const storeName = props.settings?.store_name || 'TRISNA JAYA LISTRIK';
+    const storeName = props.settings?.store_name || 'KANTIN RSIA AISYIYAH';
     const storeAddress = props.settings?.store_address || 'Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890';
     
     let rowsHtml = '';
@@ -519,7 +519,7 @@ const buildPickingSlipHtml = (order) => {
             <tr style="border-bottom: 1px solid #cbd5e1;">
                 <td style="padding: 8px 6px; text-align: center; border-right: 1px solid #cbd5e1; font-weight: bold;">${idx + 1}</td>
                 <td style="padding: 8px 10px; border-right: 1px solid #cbd5e1;">
-                    <div style="font-weight: 900; font-size: 11px; color: #0f172a;">${it.product?.name || 'Produk Listrik'}</div>
+                    <div style="font-weight: 900; font-size: 11px; color: #0f172a;">${it.product?.name || 'Produk Kantin'}</div>
                     <div style="font-size: 9px; font-family: monospace; color: #64748b; margin-top: 2px;">SKU: ${it.product?.sku || '-'}</div>
                 </td>
                 <td style="padding: 8px 6px; text-align: center; border-right: 1px solid #cbd5e1; font-weight: 900; font-size: 12px; color: #0f172a;">
@@ -632,7 +632,7 @@ const buildSuratJalanHtml = (order) => {
     const items = (order.items || []).filter(it => it.status !== 'out_of_stock');
     const custName = order.customer?.name || 'Pelanggan Proyek';
     const storeLogo = props.settings?.store_logo || '/pos-kantin/images/logo.png';
-    const storeName = props.settings?.store_name || 'TRISNA JAYA LISTRIK';
+    const storeName = props.settings?.store_name || 'KANTIN RSIA AISYIYAH';
     const storeAddress = props.settings?.store_address || 'Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890';
 
     let rowsHtml = '';
@@ -641,7 +641,7 @@ const buildSuratJalanHtml = (order) => {
             <tr style="border-bottom: 1px solid #cbd5e1;">
                 <td style="padding: 8px 6px; text-align: center; border-right: 1px solid #cbd5e1; font-weight: bold;">${idx + 1}</td>
                 <td style="padding: 8px 10px; border-right: 1px solid #cbd5e1;">
-                    <div style="font-weight: 900; font-size: 11px; color: #0f172a;">${it.product?.name || 'Produk Listrik'}</div>
+                    <div style="font-weight: 900; font-size: 11px; color: #0f172a;">${it.product?.name || 'Produk Kantin'}</div>
                     <div style="font-size: 9px; font-family: monospace; color: #64748b; margin-top: 2px;">SKU: ${it.product?.sku || '-'}</div>
                 </td>
                 <td style="padding: 8px 6px; text-align: center; border-right: 1px solid #cbd5e1; font-weight: 900; font-size: 12px; color: #0f172a;">
@@ -680,7 +680,7 @@ const buildSuratJalanHtml = (order) => {
                             <img src="${storeLogo}" alt="Logo" style="width: 52px; height: 52px; object-fit: contain;" />
                             <div>
                                 <h1 style="margin: 0; font-size: 16px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.5px;">${storeName}</h1>
-                                <div style="font-size: 10px; font-weight: bold; color: #2563eb;">Distributor & Suplier Peralatan Listrik Gedung / Proyek</div>
+                                <div style="font-size: 10px; font-weight: bold; color: #2563eb;">Kantin & Koperasi RSIA Aisyiyah Pekajangan</div>
                                 <div style="font-size: 10px; color: #475569; margin-top: 1px;">${storeAddress}</div>
                             </div>
                         </div>
@@ -763,7 +763,7 @@ const buildSalesOrderInvoiceHtml = (order) => {
     const items = (order.items || []).filter(it => it.status !== 'out_of_stock');
     const custName = order.customer?.name || 'Pelanggan Proyek';
     const storeLogo = props.settings?.store_logo || '/pos-kantin/images/logo.png';
-    const storeName = props.settings?.store_name || 'TRISNA JAYA LISTRIK';
+    const storeName = props.settings?.store_name || 'KANTIN RSIA AISYIYAH';
     const storeAddress = props.settings?.store_address || 'Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890';
 
     let rowsHtml = '';
@@ -772,7 +772,7 @@ const buildSalesOrderInvoiceHtml = (order) => {
             <tr style="border-bottom: 1px solid #cbd5e1;">
                 <td style="padding: 8px 6px; text-align: center; border-right: 1px solid #cbd5e1; font-weight: bold;">${idx + 1}</td>
                 <td style="padding: 8px 10px; border-right: 1px solid #cbd5e1;">
-                    <div style="font-weight: 900; font-size: 11px; color: #0f172a;">${it.product?.name || 'Produk Listrik'}</div>
+                    <div style="font-weight: 900; font-size: 11px; color: #0f172a;">${it.product?.name || 'Produk Kantin'}</div>
                     <div style="font-size: 9px; font-family: monospace; color: #64748b; margin-top: 2px;">SKU: ${it.product?.sku || '-'}</div>
                 </td>
                 <td style="padding: 8px 6px; text-align: center; border-right: 1px solid #cbd5e1; font-weight: bold; font-size: 11px;">
@@ -814,7 +814,7 @@ const buildSalesOrderInvoiceHtml = (order) => {
                             <img src="${storeLogo}" alt="Logo" style="width: 52px; height: 52px; object-fit: contain;" />
                             <div>
                                 <h1 style="margin: 0; font-size: 16px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.5px;">${storeName}</h1>
-                                <div style="font-size: 10px; font-weight: bold; color: #047857;">Distributor & Perlengkapan Listrik Proyek</div>
+                                <div style="font-size: 10px; font-weight: bold; color: #047857;">Kantin & Koperasi RSIA Aisyiyah Pekajangan</div>
                                 <div style="font-size: 10px; color: #475569; margin-top: 1px;">${storeAddress}</div>
                             </div>
                         </div>
@@ -872,8 +872,8 @@ const buildSalesOrderInvoiceHtml = (order) => {
                 <tr>
                     <td style="width: 60%; padding: 12px 14px; vertical-align: top;">
                         <div style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.5px;">Rekening Pembayaran Resmi Toko:</div>
-                        <div style="font-size: 11px; color: #334155; margin-top: 4px;">&bull; Bank BCA: <strong>8830-123-456</strong> a.n. TRISNA JAYA LISTRIK</div>
-                        <div style="font-size: 11px; color: #334155; margin-top: 2px;">&bull; Bank Mandiri: <strong>137-00-9876543-2</strong> a.n. TRISNA JAYA LISTRIK</div>
+                        <div style="font-size: 11px; color: #334155; margin-top: 4px;">&bull; Bank BCA: <strong>8830-123-456</strong> a.n. KANTIN RSIA AISYIYAH</div>
+                        <div style="font-size: 11px; color: #334155; margin-top: 2px;">&bull; Bank Mandiri: <strong>137-00-9876543-2</strong> a.n. KANTIN RSIA AISYIYAH</div>
                     </td>
                     <td style="width: 40%; padding: 12px 14px; vertical-align: middle; text-align: right;">
                         <div style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">TOTAL TAGIHAN:</div>
@@ -897,7 +897,7 @@ const buildSalesOrderInvoiceHtml = (order) => {
                         <div style="font-weight: bold; color: #334155;">Hormat Kami,</div>
                         <div style="height: 55px;"></div>
                         <div style="font-weight: bold; border-top: 1px solid #64748b; display: inline-block; padding-top: 4px; padding-left: 20px; padding-right: 20px;">
-                            ( TRISNA JAYA LISTRIK )
+                            ( KANTIN RSIA AISYIYAH )
                         </div>
                     </td>
                 </tr>
@@ -941,17 +941,17 @@ const buildSalesOrderDotMatrixHtml = (order) => {
         return `${d.getDate()}/${months[d.getMonth()]}/${d.getFullYear()}`;
     };
 
-    const storeName = props.settings?.store_name || 'TRISNA JAYA LISTRIK';
+    const storeName = props.settings?.store_name || 'KANTIN RSIA AISYIYAH';
     const storeAddress = props.settings?.store_address || 'Jl. Raya Pantura No. 99, Pekalongan';
     const storePhone = props.settings?.store_phone || '+62 815 7345 5951';
-    const storeEmail = props.settings?.store_email || 'trisnajaya050@gmail.com';
+    const storeEmail = props.settings?.store_email || 'kantin@rsiaaisyiyah.com';
     const storeLogo = props.settings?.store_logo || '/pos-kantin/images/logo.png';
     const bankInfo = props.settings?.bank_info || 'Bank : BCA\nNo. Rekening : 2501294511\nAtas Nama : YUNIAR DWI RAHMAWATI';
 
-    const storeNameDisplay = (storeName && storeName.trim() !== '') ? storeName : 'TRISNA JAYA LISTRIK';
+    const storeNameDisplay = (storeName && storeName.trim() !== '') ? storeName : 'KANTIN RSIA AISYIYAH';
     const storeAddressDisplay = storeAddress || 'Jl. Raya Karanganyar, Kebonsari, Karangsari, Kab. Pekalongan';
     const storePhoneDisplay = storePhone || '+62 815-7345-5951';
-    const storeEmailDisplay = storeEmail || 'trisnajaya050@gmail.com';
+    const storeEmailDisplay = storeEmail || 'kantin@rsiaaisyiyah.com';
 
     const custName = order.customer?.name || 'Pelanggan Proyek';
     const custAddress = order.customer?.address || '-';
@@ -1935,7 +1935,7 @@ const printDocument = (type = 'invoice') => {
                         <div class="flex items-center gap-3">
                             <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-14 h-14 object-contain" />
                             <div>
-                                <h2 class="text-lg font-black tracking-tight text-slate-950 uppercase">TRISNA JAYA LISTRIK</h2>
+                                <h2 class="text-lg font-black tracking-tight text-slate-950 uppercase">KANTIN RSIA AISYIYAH</h2>
                                 <p class="text-xs text-slate-600">Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890</p>
                                 <p class="text-[11px] text-amber-700 font-bold uppercase">Gudang & Logistik Distribusi</p>
                             </div>
@@ -2081,8 +2081,8 @@ const printDocument = (type = 'invoice') => {
                         <div class="flex items-center gap-3">
                             <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-14 h-14 object-contain" />
                             <div>
-                                <h2 class="text-xl font-black tracking-tight text-slate-950 uppercase">TRISNA JAYA LISTRIK</h2>
-                                <p class="text-xs text-slate-600 font-medium">Distributor & Suplier Peralatan Listrik Gedung / Proyek</p>
+                                <h2 class="text-xl font-black tracking-tight text-slate-950 uppercase">KANTIN RSIA AISYIYAH</h2>
+                                <p class="text-xs text-slate-600 font-medium">Kantin & Koperasi RSIA Aisyiyah Pekajangan</p>
                                 <p class="text-xs text-slate-600">Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890</p>
                             </div>
                         </div>
@@ -2204,10 +2204,10 @@ const printDocument = (type = 'invoice') => {
                         <div class="flex items-start gap-2.5">
                             <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain shrink-0 mt-0.5" />
                             <div>
-                                <h2 class="font-black text-base uppercase tracking-tight text-slate-950">{{ settings?.store_name || 'TRISNA JAYA LISTRIK' }}</h2>
+                                <h2 class="font-black text-base uppercase tracking-tight text-slate-950">{{ settings?.store_name || 'KANTIN RSIA AISYIYAH' }}</h2>
                                 <p class="text-[11px] text-slate-600 mt-0.5">Alamat : {{ settings?.store_address || 'Jl. Raya Pantura No. 99, Pekalongan' }}</p>
                                 <p class="text-[11px] text-slate-600">Telepon/HP : {{ settings?.store_phone || '+62 815 7345 5951' }}</p>
-                                <p class="text-[11px] text-slate-600">Email : {{ settings?.store_email || 'trisnajaya050@gmail.com' }}</p>
+                                <p class="text-[11px] text-slate-600">Email : {{ settings?.store_email || 'kantin@rsiaaisyiyah.com' }}</p>
                             </div>
                         </div>
                         <div class="text-right">
@@ -2334,10 +2334,10 @@ const printDocument = (type = 'invoice') => {
                 <div v-else id="printable-invoice" class="p-8 space-y-6 flex-1 overflow-y-auto bg-white">
                     <div class="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
                         <div class="flex items-center gap-3">
-                            <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo Trisna Jaya" class="w-14 h-14 object-contain" />
+                            <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo Kantin RSIA" class="w-14 h-14 object-contain" />
                             <div>
-                                <h2 class="text-xl font-black tracking-tight text-slate-950 uppercase">{{ settings?.store_name || 'TRISNA JAYA LISTRIK' }}</h2>
-                                <p class="text-xs text-slate-600 font-medium">Distributor & Perlengkapan Listrik Proyek</p>
+                                <h2 class="text-xl font-black tracking-tight text-slate-950 uppercase">{{ settings?.store_name || 'KANTIN RSIA AISYIYAH' }}</h2>
+                                <p class="text-xs text-slate-600 font-medium">Kantin & Koperasi RSIA Aisyiyah Pekajangan</p>
                                 <p class="text-xs text-slate-600">Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890</p>
                             </div>
                         </div>
@@ -2373,7 +2373,7 @@ const printDocument = (type = 'invoice') => {
                         <thead>
                             <tr class="bg-slate-100 font-black border-b border-slate-300 text-[11px]">
                                 <th class="py-2.5 px-3 border-r border-slate-300 w-10 text-center">No</th>
-                                <th class="py-2.5 px-3 border-r border-slate-300">Deskripsi Barang Listrik</th>
+                                <th class="py-2.5 px-3 border-r border-slate-300">Deskripsi Barang Kantin</th>
                                 <th class="py-2.5 px-3 text-center border-r border-slate-300 w-28">Kuantiti</th>
                                 <th class="py-2.5 px-3 text-right border-r border-slate-300 w-36">Harga Satuan</th>
                                 <th class="py-2.5 px-3 text-right w-36">Subtotal (Rp)</th>
@@ -2396,8 +2396,8 @@ const printDocument = (type = 'invoice') => {
                     <div class="flex justify-between items-center p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                         <div class="text-xs text-slate-700 space-y-1">
                             <p class="font-black text-slate-900 uppercase text-[10px] tracking-wider">Rekening Pembayaran Resmi Toko:</p>
-                            <p>&bull; Bank BCA: <strong>8830-123-456</strong> a.n. TRISNA JAYA LISTRIK</p>
-                            <p>&bull; Bank Mandiri: <strong>137-00-9876543-2</strong> a.n. TRISNA JAYA LISTRIK</p>
+                            <p>&bull; Bank BCA: <strong>8830-123-456</strong> a.n. KANTIN RSIA AISYIYAH</p>
+                            <p>&bull; Bank Mandiri: <strong>137-00-9876543-2</strong> a.n. KANTIN RSIA AISYIYAH</p>
                         </div>
                         <div class="text-right">
                             <span class="text-xs text-slate-500 font-bold uppercase tracking-wider block">TOTAL TAGIHAN:</span>
@@ -2414,7 +2414,7 @@ const printDocument = (type = 'invoice') => {
                         <div class="w-48">
                             <p class="font-bold">Hormat Kami,</p>
                             <div class="h-16"></div>
-                            <p class="border-t border-slate-400 pt-1 font-bold">( TRISNA JAYA LISTRIK )</p>
+                            <p class="border-t border-slate-400 pt-1 font-bold">( KANTIN RSIA AISYIYAH )</p>
                         </div>
                     </div>
                 </div>

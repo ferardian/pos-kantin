@@ -369,16 +369,16 @@ const buildReturnDotMatrixHtml = (ret) => {
         return `${d.getDate()}/${months[d.getMonth()]}/${d.getFullYear()}`;
     };
 
-    const storeName = props.settings?.store_name || 'TRISNA JAYA LISTRIK';
+    const storeName = props.settings?.store_name || 'KANTIN RSIA AISYIYAH';
     const storeAddress = props.settings?.store_address || 'Jl. Raya Pekalongan No. 88';
     const storePhone = props.settings?.store_phone || '0812-3456-7890';
-    const storeEmail = props.settings?.store_email || 'trisnajaya050@gmail.com';
+    const storeEmail = props.settings?.store_email || 'kantin@rsiaaisyiyah.com';
     const storeLogo = props.settings?.store_logo || '/pos-kantin/images/logo.png';
 
-    const storeNameDisplay = (storeName && storeName.trim() !== '') ? storeName : 'TRISNA JAYA LISTRIK';
+    const storeNameDisplay = (storeName && storeName.trim() !== '') ? storeName : 'KANTIN RSIA AISYIYAH';
     const storeAddressDisplay = storeAddress || 'Jl. Raya Karanganyar, Kebonsari, Karangsari, Kab. Pekalongan';
     const storePhoneDisplay = storePhone || '+62 815-7345-5951';
-    const storeEmailDisplay = storeEmail || 'trisnajaya050@gmail.com';
+    const storeEmailDisplay = storeEmail || 'kantin@rsiaaisyiyah.com';
 
     const partyName = ret.return_type === 'purchase_supplier' ? (ret.supplier_name || ret.supplier?.name || 'Supplier') : (ret.customer_name || ret.customer?.name || 'Pelanggan Umum');
     const formattedDate = formatCleanDate(ret.return_date || ret.created_at || new Date());
@@ -1043,7 +1043,7 @@ const printDocument = () => {
                                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                                     <!-- Searchable Combobox for Product (Spacious) -->
                                     <div class="sm:col-span-5 relative">
-                                        <label class="block text-[10px] font-bold text-slate-500 mb-1">Barang Listrik</label>
+                                        <label class="block text-[10px] font-bold text-slate-500 mb-1">Barang Kantin</label>
                                         <button 
                                             type="button"
                                             @click="activeProductDropdownIndex = (activeProductDropdownIndex === idx ? null : idx)"
@@ -1227,10 +1227,10 @@ const printDocument = () => {
                         <div class="flex items-start gap-2.5">
                             <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain shrink-0 mt-0.5" />
                             <div>
-                                <h2 class="font-black text-base uppercase tracking-tight text-slate-950">{{ settings?.store_name || 'TRISNA JAYA LISTRIK' }}</h2>
+                                <h2 class="font-black text-base uppercase tracking-tight text-slate-950">{{ settings?.store_name || 'KANTIN RSIA AISYIYAH' }}</h2>
                                 <p class="text-[11px] text-slate-600 mt-0.5">Alamat : {{ settings?.store_address || 'Jl. Raya Pekalongan No. 88' }}</p>
                                 <p class="text-[11px] text-slate-600">Telepon/HP : {{ settings?.store_phone || '0812-3456-7890' }}</p>
-                                <p class="text-[11px] text-slate-600">Email : {{ settings?.store_email || 'trisnajaya050@gmail.com' }}</p>
+                                <p class="text-[11px] text-slate-600">Email : {{ settings?.store_email || 'kantin@rsiaaisyiyah.com' }}</p>
                             </div>
                         </div>
                         <div class="text-right">
@@ -1344,10 +1344,10 @@ const printDocument = () => {
                 <div v-else id="printable-document-a4" class="p-8 space-y-6 flex-1 overflow-y-auto bg-white">
                     <div class="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
                         <div class="flex items-center gap-3">
-                            <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo Trisna Jaya" class="w-14 h-14 object-contain" />
+                            <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo Kantin RSIA" class="w-14 h-14 object-contain" />
                             <div>
-                                <h2 class="text-xl font-black tracking-tight text-slate-950 uppercase">{{ settings?.store_name || 'TRISNA JAYA LISTRIK' }}</h2>
-                                <p class="text-xs text-slate-600 font-medium">Distributor & Suplier Perlengkapan Listrik</p>
+                                <h2 class="text-xl font-black tracking-tight text-slate-950 uppercase">{{ settings?.store_name || 'KANTIN RSIA AISYIYAH' }}</h2>
+                                <p class="text-xs text-slate-600 font-medium">Kantin & Koperasi RSIA Aisyiyah Pekajangan</p>
                                 <p class="text-xs text-slate-600">Jl. Raya Pekalongan No. 88 &bull; Telp: 0812-3456-7890</p>
                             </div>
                         </div>
@@ -1385,7 +1385,7 @@ const printDocument = () => {
                         <thead>
                             <tr class="bg-slate-100 font-black border-b border-slate-300 text-[11px]">
                                 <th class="py-2.5 px-3 border-r border-slate-300 w-10 text-center">No</th>
-                                <th class="py-2.5 px-3 border-r border-slate-300">Deskripsi Barang Listrik</th>
+                                <th class="py-2.5 px-3 border-r border-slate-300">Deskripsi Barang Kantin</th>
                                 <th class="py-2.5 px-3 text-center border-r border-slate-300 w-28">Kuantiti</th>
                                 <th class="py-2.5 px-3 text-center border-r border-slate-300 w-32">Kondisi Fisik</th>
                                 <th class="py-2.5 px-3 text-right border-r border-slate-300 w-32">Harga Satuan</th>
@@ -1432,7 +1432,7 @@ const printDocument = () => {
                         <div>
                             <p class="font-bold">Petugas Gudang / Toko,</p>
                             <div class="h-16"></div>
-                            <p class="border-t border-slate-400 pt-1 font-bold inline-block px-8">Trisna Jaya Listrik</p>
+                            <p class="border-t border-slate-400 pt-1 font-bold inline-block px-8">Kantin RSIA Aisyiyah</p>
                         </div>
                     </div>
                 </div>

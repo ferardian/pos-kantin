@@ -187,7 +187,7 @@ const printTransferSlip = (transfer) => {
             <tr style="border-bottom: 1px solid #cbd5e1;">
                 <td style="padding: 8px 6px; text-align: center; border-right: 1px solid #cbd5e1; font-weight: bold;">${idx + 1}</td>
                 <td style="padding: 8px 10px; border-right: 1px solid #cbd5e1;">
-                    <div style="font-weight: 900; font-size: 11px; color: #0f172a;">${it.product?.name || 'Produk Listrik'}</div>
+                    <div style="font-weight: 900; font-size: 11px; color: #0f172a;">${it.product?.name || 'Produk Kantin'}</div>
                     <div style="font-size: 9px; font-family: monospace; color: #64748b; margin-top: 2px;">SKU: ${it.product?.sku || '-'}</div>
                 </td>
                 <td style="padding: 8px 6px; text-align: center; border-right: 1px solid #cbd5e1; font-weight: 900; font-size: 12px; color: #0f172a;">
@@ -225,7 +225,7 @@ const printTransferSlip = (transfer) => {
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <img src="${props.settings?.store_logo || '/pos-kantin/images/logo.png'}" alt="Logo" style="width: 52px; height: 52px; object-fit: contain;" />
                             <div>
-                                <h1 style="margin: 0; font-size: 16px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.5px;">${props.settings?.store_name || 'TRISNA JAYA LISTRIK'}</h1>
+                                <h1 style="margin: 0; font-size: 16px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.5px;">${props.settings?.store_name || 'KANTIN RSIA AISYIYAH'}</h1>
                                 <div style="font-size: 10px; font-weight: bold; color: #d97706; text-transform: uppercase;">Logistik & Mutasi Stok Internal</div>
                                 <div style="font-size: 10px; color: #475569; margin-top: 1px;">${props.settings?.store_address || 'Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890'}</div>
                             </div>
@@ -708,7 +708,7 @@ const printTransferSlip = (transfer) => {
                         <div class="flex items-center justify-between">
                             <div>
                                 <h4 class="text-xs font-black uppercase text-slate-900">Daftar Barang yang Dimutasi</h4>
-                                <p class="text-[11px] text-slate-500">Pilih produk listrik dan jumlah kuantiti yang akan dipindahkan.</p>
+                                <p class="text-[11px] text-slate-500">Pilih produk kantin dan jumlah kuantiti yang akan dipindahkan.</p>
                             </div>
                             <button 
                                 type="button" 

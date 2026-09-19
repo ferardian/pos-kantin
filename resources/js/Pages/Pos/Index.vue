@@ -745,7 +745,7 @@ const buildPrintReceiptHtml = (trx, format, st, user) => {
         const storeNameDisplay = (storeName && storeName.trim() !== '') ? storeName : 'KOPERASI RSIA AISYIYAH PEKAJANGAN';
         const storeAddressDisplay = storeAddress || 'Jl. Raya Karanganyar, Kebonsari, Karangsari, Kab. Pekalongan';
         const storePhoneDisplay = storePhone || '+62 815-7345-5951';
-        const storeEmailDisplay = storeEmail || 'trisnajaya050@gmail.com';
+        const storeEmailDisplay = storeEmail || 'kantin@rsiaaisyiyah.com';
 
         const dotMatrixItemsHtml = items.map((it) => {
             const qtyStr = `${it.qty} ${it.unit?.unit_name || 'Pcs'}`;
@@ -2505,7 +2505,7 @@ onUnmounted(() => {
                                         <h2 class="font-black text-base uppercase tracking-tight text-slate-950">{{ settings.store_name || 'KOPERASI RSIA AISYIYAH PEKAJANGAN' }}</h2>
                                         <p class="text-[11px] text-slate-600 mt-0.5">Alamat : {{ settings.store_address || 'Jl. Raya Pantura No. 99, Pekalongan' }}</p>
                                         <p class="text-[11px] text-slate-600">Telepon/HP : {{ settings.store_phone || '+62 815 7345 5951' }}</p>
-                                        <p class="text-[11px] text-slate-600">Email : {{ settings.store_email || 'trisnajaya050@gmail.com' }}</p>
+                                        <p class="text-[11px] text-slate-600">Email : {{ settings.store_email || 'kantin@rsiaaisyiyah.com' }}</p>
                                     </div>
                                 </div>
                                 <div class="text-right">

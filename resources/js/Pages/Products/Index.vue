@@ -725,7 +725,7 @@ const printBarcodeStickers = () => {
             itemsHtml += `
                 <div class="${cls}">
                     <div class="header-row">
-                        <span class="store-name">TRISNA JAYA</span>
+                        <span class="store-name">KANTIN RSIA</span>
                         <span class="pbrand">${brandName}</span>
                     </div>
                     <div class="pname-std">${productName}</div>
@@ -742,7 +742,7 @@ const printBarcodeStickers = () => {
             itemsHtml += `
                 <div class="sticker-a4">
                     <div class="header-row">
-                        <span class="store-name">TRISNA JAYA</span>
+                        <span class="store-name">KANTIN RSIA</span>
                         <span class="pbrand">${brandName}</span>
                     </div>
                     <div class="pname-std">${productName}</div>
@@ -2212,7 +2212,7 @@ const submitNewUnit = () => {
                             <!-- Standard 50x30 / 40x30 / A4 Sticker Layout -->
                             <template v-else>
                                 <div class="w-full flex items-center justify-between border-b border-slate-200 pb-1 mb-1">
-                                    <span class="text-[8px] font-black tracking-tight text-slate-900 uppercase truncate">TRISNA JAYA</span>
+                                    <span class="text-[8px] font-black tracking-tight text-slate-900 uppercase truncate">KANTIN RSIA</span>
                                     <span class="text-[7px] text-amber-700 font-bold uppercase truncate">{{ barcodeProduct?.brand?.name || 'KANTIN' }}</span>
                                 </div>
 

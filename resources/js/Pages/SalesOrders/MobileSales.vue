@@ -447,7 +447,7 @@ const submitOrder = () => {
                 <div class="flex items-center gap-2.5">
                     <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo TJ" class="w-8 h-8 object-contain shrink-0" />
                     <div>
-                        <h1 class="text-xs font-black tracking-tight text-slate-900 uppercase">{{ settings?.store_name || 'TRISNA JAYA LISTRIK' }}</h1>
+                        <h1 class="text-xs font-black tracking-tight text-slate-900 uppercase">{{ settings?.store_name || 'KANTIN RSIA AISYIYAH' }}</h1>
                         <p class="text-[10px] text-amber-600 font-bold flex items-center gap-1">
                             <span>Sales: {{ user?.name }}</span>
                         </p>
