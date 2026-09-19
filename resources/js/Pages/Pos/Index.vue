@@ -170,12 +170,9 @@ const filteredProducts = computed(() => {
 });
 
 // 4 Price Tiers calculation
-const getUnitPrice = (unit, tier = activePriceTier.value) => {
+const getUnitPrice = (unit) => {
     if (!unit) return 0;
-    if (tier === 'tukang') return Number(unit.price_technician);
-    if (tier === 'kontraktor') return Number(unit.price_contractor);
-    if (tier === 'grosir') return Number(unit.price_wholesale);
-    return Number(unit.price_retail);
+    return Number(unit.price_retail || 0);
 };
 
 const getTierLabel = (tier) => {
@@ -199,11 +196,10 @@ const getTierBadgeClass = (tier) => {
 };
 
 // Add to Cart
-const addToCart = (product, specificUnit = null, specificTier = null) => {
+const addToCart = (product, specificUnit = null) => {
     const unit = specificUnit || product.units.find(u => u.is_base_unit) || product.units[0];
-    const tier = specificTier || activePriceTier.value || selectedCustomer.value?.tier || 'eceran';
-    const price = getUnitPrice(unit, tier);
-    const existingIndex = cart.value.findIndex(item => item.product.id === product.id && item.unit.id === unit.id && item.tier === tier);
+    const price = getUnitPrice(unit);
+    const existingIndex = cart.value.findIndex(item => item.product.id === product.id && item.unit.id === unit.id);
 
     if (existingIndex > -1) {
         cart.value[existingIndex].qty += 1;
@@ -212,7 +208,6 @@ const addToCart = (product, specificUnit = null, specificTier = null) => {
         cart.value.push({
             product,
             unit,
-            tier,
             qty: 1,
             unit_price: price,
             subtotal: price,
@@ -222,15 +217,10 @@ const addToCart = (product, specificUnit = null, specificTier = null) => {
     focusSearchInput();
 };
 
-const getItemQtyInCart = (productId, unitId = null, tier = null) => {
-    if (unitId && tier) {
-        const item = cart.value.find(i => i.product.id === productId && i.unit.id === unitId && i.tier === tier);
-        return item ? item.qty : 0;
-    }
+const getItemQtyInCart = (productId, unitId = null) => {
     if (unitId) {
-        return cart.value
-            .filter(i => i.product.id === productId && i.unit.id === unitId)
-            .reduce((sum, i) => sum + i.qty, 0);
+        const item = cart.value.find(i => i.product.id === productId && i.unit.id === unitId);
+        return item ? item.qty : 0;
     }
     return cart.value
         .filter(i => i.product.id === productId)
@@ -238,8 +228,7 @@ const getItemQtyInCart = (productId, unitId = null, tier = null) => {
 };
 
 const updateUnitQtyInCatalog = (product, unit, delta) => {
-    const tier = activePriceTier.value;
-    const existingIndex = cart.value.findIndex(item => item.product.id === product.id && item.unit.id === unit.id && item.tier === tier);
+    const existingIndex = cart.value.findIndex(item => item.product.id === product.id && item.unit.id === unit.id);
     if (existingIndex > -1) {
         const newQty = cart.value[existingIndex].qty + delta;
         if (newQty <= 0) {
@@ -249,7 +238,7 @@ const updateUnitQtyInCatalog = (product, unit, delta) => {
             cart.value[existingIndex].subtotal = cart.value[existingIndex].qty * cart.value[existingIndex].unit_price;
         }
     } else if (delta > 0) {
-        addToCart(product, unit, tier);
+        addToCart(product, unit);
     }
     focusSearchInput();
 };
@@ -261,19 +250,12 @@ const changeItemUnit = (itemIndex, newUnitId) => {
     const newUnit = item.product.units.find(u => u.id === Number(newUnitId));
     if (newUnit) {
         item.unit = newUnit;
-        item.unit_price = getUnitPrice(newUnit, item.tier || activePriceTier.value);
+        item.unit_price = getUnitPrice(newUnit);
         item.subtotal = item.qty * item.unit_price;
     }
 };
 
-// Change strata / price tier for a specific item in cart
-const changeCartItemTier = (itemIndex, newTier) => {
-    const item = cart.value[itemIndex];
-    if (!item) return;
-    item.tier = newTier;
-    item.unit_price = getUnitPrice(item.unit, newTier);
-    item.subtotal = item.qty * item.unit_price;
-};
+
 
 // Change active price tier (sets active tier for catalog & future items without altering existing locked items in cart)
 const setPriceTier = (tier) => {
@@ -285,9 +267,7 @@ const setPriceTier = (tier) => {
 const selectCustomer = (cust) => {
     selectedCustomer.value = cust;
     checkoutForm.customer_id = cust.id;
-    if (cust.tier) {
-        setPriceTier(cust.tier);
-    }
+
     isCustomerModalOpen.value = false;
     searchCustomerQuery.value = '';
     isAddingNewCustomer.value = false;
@@ -1569,19 +1549,14 @@ onUnmounted(() => {
                         <!-- Multi-Unit Price Chips with Active Tier Pricing -->
                         <div class="space-y-1.5 pt-2 border-t border-slate-100">
                             <template v-for="unit in product.units" :key="unit.id">
-                                <!-- CASE A: Unit is in Cart under current activePriceTier (Show Stepper) -->
+                                <!-- CASE A: Unit is in Cart (Show Stepper) -->
                                 <div 
-                                    v-if="getItemQtyInCart(product.id, unit.id, activePriceTier) > 0"
+                                    v-if="getItemQtyInCart(product.id, unit.id) > 0"
                                     class="p-2 rounded-xl bg-amber-50/90 border-2 border-amber-500 flex items-center justify-between shadow-xs transition-all"
                                 >
                                     <div class="min-w-0 pr-1">
-                                        <div class="flex items-center gap-1">
-                                            <p class="text-[11px] font-bold text-amber-950 truncate">{{ unit.unit_name }}</p>
-                                            <span class="text-[8px] font-black px-1 rounded uppercase bg-amber-500 text-slate-950">
-                                                {{ getTierLabel(activePriceTier) }}
-                                            </span>
-                                        </div>
-                                        <p class="text-[10px] text-amber-900 font-black">{{ formatRupiah(getUnitPrice(unit, activePriceTier)) }}</p>
+                                        <p class="text-[11px] font-bold text-amber-950 truncate">{{ unit.unit_name }}</p>
+                                        <p class="text-[10px] text-amber-900 font-black">{{ formatRupiah(getUnitPrice(unit)) }}</p>
                                     </div>
                                     <div class="flex items-center gap-1 bg-white border border-amber-300 rounded-lg p-0.5 shadow-2xs shrink-0">
                                         <button 
@@ -1591,7 +1566,7 @@ onUnmounted(() => {
                                         >
                                             <Minus class="w-3 h-3" />
                                         </button>
-                                        <span class="w-5 text-center text-xs font-black text-slate-900">{{ getItemQtyInCart(product.id, unit.id, activePriceTier) }}</span>
+                                        <span class="w-5 text-center text-xs font-black text-slate-900">{{ getItemQtyInCart(product.id, unit.id) }}</span>
                                         <button 
                                             @click.stop="updateUnitQtyInCatalog(product, unit, 1)" 
                                             class="w-5 h-5 rounded bg-amber-500 text-slate-950 flex items-center justify-center active:scale-75 transition cursor-pointer shadow-xs font-black"
@@ -1615,7 +1590,7 @@ onUnmounted(() => {
                                         </span>
                                     </div>
                                     <span class="text-slate-900 font-black shrink-0">
-                                        {{ formatRupiah(getUnitPrice(unit, activePriceTier)) }}
+                                        {{ formatRupiah(getUnitPrice(unit)) }}
                                     </span>
                                 </div>
                             </template>
@@ -1634,7 +1609,7 @@ onUnmounted(() => {
                         {{ cart.reduce((sum, item) => sum + item.qty, 0) }}
                     </div>
                     <div class="truncate">
-                        <p class="text-[10px] text-slate-400 font-bold uppercase">{{ cart.length }} Jenis &bull; {{ getTierLabel(activePriceTier) }}</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">{{ cart.length }} Jenis Belanja</p>
                         <p class="text-xs font-black text-amber-400 truncate">{{ formatRupiah(totalNet) }}</p>
                     </div>
                 </button>
@@ -1678,9 +1653,6 @@ onUnmounted(() => {
                         <div>
                             <div class="flex items-center gap-1.5">
                                 <h2 class="text-sm font-black text-slate-900">Keranjang</h2>
-                                <span :class="[getTierBadgeClass(activePriceTier), 'text-[9px] font-black uppercase px-1.5 py-0.2 rounded border']">
-                                    {{ getTierLabel(activePriceTier) }}
-                                </span>
                             </div>
                             <p class="text-[11px] text-slate-400">{{ cart.length }} jenis barang</p>
                         </div>
@@ -1714,9 +1686,6 @@ onUnmounted(() => {
                                 <h4 class="text-xs font-bold text-slate-900 line-clamp-1 leading-snug">{{ item.product.name }}</h4>
                                 <div class="flex items-center gap-1.5 mt-0.5">
                                     <span class="text-[10px] text-slate-400 font-mono">{{ item.product.sku }}</span>
-                                    <span :class="[getTierBadgeClass(item.tier), 'text-[9px] font-black uppercase px-1.5 py-0.2 rounded border']">
-                                        {{ getTierLabel(item.tier) }}
-                                    </span>
                                 </div>
                             </div>
                             <button @click="removeFromCart(index)" class="text-slate-400 hover:text-rose-600 transition p-1 cursor-pointer">
@@ -1736,7 +1705,7 @@ onUnmounted(() => {
                                     :key="u.id" 
                                     :value="u.id"
                                 >
-                                    {{ u.unit_name }} ({{ formatRupiah(getUnitPrice(u, item.tier)) }})
+                                    {{ u.unit_name }} ({{ formatRupiah(getUnitPrice(u)) }})
                                 </option>
                             </select>
 
@@ -1746,26 +1715,7 @@ onUnmounted(() => {
                             </div>
                         </div>
 
-                        <!-- Strata Tier Switcher for this specific Item -->
-                        <div class="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100">
-                            <span class="text-[9px] font-bold uppercase text-slate-400">Ubah Strata:</span>
-                            <div class="flex items-center gap-1">
-                                <button 
-                                    v-for="t in priceTiers" 
-                                    :key="t.id"
-                                    type="button"
-                                    @click="changeCartItemTier(index, t.id)"
-                                    :class="[
-                                        item.tier === t.id 
-                                            ? 'bg-slate-900 text-white font-black shadow-2xs' 
-                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-600',
-                                        'px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase transition cursor-pointer active:scale-95'
-                                    ]"
-                                >
-                                    {{ t.label }}
-                                </button>
-                            </div>
-                        </div>
+                        
 
                         <!-- Qty Controls -->
                         <div class="flex items-center justify-between pt-1.5 border-t border-slate-100">
@@ -1855,7 +1805,7 @@ onUnmounted(() => {
                                 {{ isAddingNewCustomer ? 'Tambah Pelanggan Baru' : 'Pilih Pelanggan / Proyek' }}
                             </h3>
                             <p class="text-[11px] text-slate-400">
-                                {{ isAddingNewCustomer ? 'Masukkan data pelanggan untuk langsung dipakai transaksi' : 'Pilih pelanggan untuk menentukan strata harga & histori nota' }}
+                                {{ isAddingNewCustomer ? 'Masukkan data pelanggan untuk langsung dipakai transaksi' : 'Pilih pelanggan / karyawan untuk bon atau riwayat transaksi' }}
                             </p>
                         </div>
                     </div>
@@ -1916,9 +1866,6 @@ onUnmounted(() => {
                             <div>
                                 <div class="flex items-center gap-2">
                                     <h4 class="text-xs font-bold text-slate-900">{{ cust.name }}</h4>
-                                    <span :class="[getTierBadgeClass(cust.tier), 'text-[9px] font-black uppercase px-2 py-0.5 rounded border']">
-                                        {{ getTierLabel(cust.tier) }}
-                                    </span>
                                 </div>
                                 <p class="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5">
                                     <Phone class="w-3.5 h-3.5 text-slate-400" />
@@ -1992,28 +1939,7 @@ onUnmounted(() => {
                         ></textarea>
                     </div>
 
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                            Kategori Strata Harga
-                        </label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button 
-                                v-for="t in [
-                                    { id: 'eceran', label: '1. Retail' },
-                                    { id: 'tukang', label: '2. Bronze' },
-                                    { id: 'kontraktor', label: '3. Gold' },
-                                    { id: 'grosir', label: '4. Diamond' }
-                                ]" 
-                                :key="t.id"
-                                type="button"
-                                @click="newCustomerForm.tier = t.id"
-                                :class="newCustomerForm.tier === t.id ? 'bg-slate-900 text-white font-black border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'"
-                                class="py-2 px-2.5 rounded-xl border text-[11px] text-center transition cursor-pointer"
-                            >
-                                {{ t.label }}
-                            </button>
-                        </div>
-                    </div>
+
 
                     <div>
                         <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">
@@ -2147,7 +2073,7 @@ onUnmounted(() => {
                 <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white z-10">
                     <div>
                         <h3 class="text-sm font-bold text-slate-900">Pembayaran Kasir</h3>
-                        <p class="text-xs text-slate-500">Pelanggan: <span class="text-slate-900 font-bold">{{ selectedCustomer?.name }}</span> ({{ getTierLabel(activePriceTier) }})</p>
+                        <p class="text-xs text-slate-500">Pelanggan: <span class="text-slate-900 font-bold">{{ selectedCustomer?.name }}</span> </p>
                     </div>
                     <button @click="isCheckoutOpen = false" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
                         <X class="w-5 h-5" />
