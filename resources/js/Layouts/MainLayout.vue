@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { 
-    Store, ShoppingCart, ClipboardList, Package, Users, BarChart3, 
+    Truck, Store, ShoppingCart, ClipboardList, Package, Users, BarChart3, 
     LogOut, CheckCircle, AlertTriangle, Shield,
     RotateCcw, Settings, Menu, X, ArrowLeftRight,
     LayoutDashboard, Wallet, UserCog,
@@ -29,24 +29,28 @@ const toggleSidebar = () => {
     localStorage.setItem('pos_sidebar_collapsed', isSidebarCollapsed.value ? 'true' : 'false');
 };
 
-const allNavigation = [
+const allNavigation = computed(() => [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'kasir'] },
     { name: 'Kasir POS', href: '/pos', icon: ShoppingCart, roles: ['admin', 'kasir'] },
     { name: 'Titip Jual (Konsinyasi)', href: '/consignments', icon: Store, roles: ['admin', 'kasir'] },
-    
-    
-    
+    { 
+        name: 'Penerimaan Barang', 
+        href: '/goods-receipts', 
+        icon: Truck, 
+        roles: ['admin', 'kasir', 'gudang'],
+        badge: Number(page.props.pendingGoodsReceiptsCount || 0)
+    },
     { name: 'Master Produk & Stok', href: '/products', icon: Package, roles: ['admin', 'kasir', 'gudang'] },
     { name: 'Piutang Karyawan', href: '/receivables', icon: ClipboardList, roles: ['admin', 'kasir'] },
     { name: 'Buku Kas & Cashbox', href: '/cashboxes', icon: Wallet, roles: ['admin', 'kasir'] },
     { name: 'Laporan & Omset', href: '/reports', icon: BarChart3, roles: ['admin'] },
     { name: 'Kelola Pengguna & Staff', href: '/users', icon: UserCog, roles: ['admin'] },
     { name: 'Pengaturan Kantin', href: '/settings', icon: Settings, roles: ['admin'] },
-];
+]);
 
 const navigation = computed(() => {
     const role = user.value.role || 'kasir';
-    return allNavigation.filter(item => {
+    return allNavigation.value.filter(item => {
         if (item.href === '/products' && role === 'kasir') {
             const canAccess = settings.value?.kasir_can_access_products;
             if (canAccess !== '1' && canAccess !== true && canAccess !== 1) {

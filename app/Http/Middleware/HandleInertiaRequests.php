@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\Setting;
+use App\Models\EmployeeReceivable;
+use App\Models\GoodsReceipt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Middleware;
@@ -45,7 +47,8 @@ class HandleInertiaRequests extends Middleware
             'user' => $request->user(),
             'settings' => fn () => Setting::getSettings(),
             'pendingOrdersCount' => 0,
-            'pendingReceivablesCount' => fn () => Auth::check() ? \App\Models\EmployeeReceivable::whereIn('status', ['unpaid', 'partial'])->count() : 0,
+            'pendingReceivablesCount' => fn () => Auth::check() ? EmployeeReceivable::whereIn('status', ['unpaid', 'partial'])->count() : 0,
+            'pendingGoodsReceiptsCount' => fn () => (Auth::check() && Auth::user()->role === 'admin') ? GoodsReceipt::where('status', 'pending')->count() : 0,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

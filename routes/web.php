@@ -6,6 +6,7 @@ use App\Http\Controllers\ConsignmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeReceivableController;
+use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
@@ -23,7 +24,6 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
 
     Route::get('/', function () {
-        $user = auth()->user();
         return redirect()->route('dashboard');
     });
 
@@ -42,7 +42,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/cashboxes/transfer', [CashboxController::class, 'transferBalance'])->name('cashboxes.transfer');
     });
 
-
     // Titip Jual / Konsinyasi (Jajan Penitip)
     Route::middleware('role:kasir')->group(function () {
         Route::get('/consignments', [ConsignmentController::class, 'index'])->name('consignments.index');
@@ -57,6 +56,15 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:kasir')->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'store'])->name('pos.checkout');
+    });
+
+    // Penerimaan Barang (Belanja Stok Masuk) & Master Supplier
+    Route::middleware('role:admin,kasir,gudang')->group(function () {
+        Route::get('/goods-receipts', [GoodsReceiptController::class, 'index'])->name('goods-receipts.index');
+        Route::post('/goods-receipts', [GoodsReceiptController::class, 'store'])->name('goods-receipts.store');
+        Route::post('/goods-receipts/{id}/approve', [GoodsReceiptController::class, 'approve'])->name('goods-receipts.approve');
+        Route::post('/goods-receipts/{id}/reject', [GoodsReceiptController::class, 'reject'])->name('goods-receipts.reject');
+        Route::post('/suppliers', [GoodsReceiptController::class, 'storeSupplier'])->name('suppliers.store');
     });
 
     // Master Produk, Kategori, Merek & Stok

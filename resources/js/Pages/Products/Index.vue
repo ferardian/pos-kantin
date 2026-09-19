@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
-import { useForm, router, Head, usePage } from '@inertiajs/vue3';
+import { useForm, router, Head, usePage, Link } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import JsBarcode from 'jsbarcode';
 import { 
@@ -3018,6 +3018,11 @@ const submitNewUnit = () => {
                 </div>
 
                 <div class="space-y-3 text-xs">
+                    <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-[11px] text-amber-900">
+                        <span>💡 Untuk belanja / kulakan stok supplier, gunakan menu <strong>Penerimaan Barang</strong>.</span>
+                        <Link href="/goods-receipts" class="text-amber-700 underline font-bold hover:text-amber-900 shrink-0 ml-2">Buka Menu</Link>
+                    </div>
+
                     <div>
                         <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">Tipe Penyesuaian</label>
                         <div class="grid grid-cols-3 gap-2">

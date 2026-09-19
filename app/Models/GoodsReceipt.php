@@ -14,12 +14,17 @@ class GoodsReceipt extends Model
         'receipt_date',
         'receiver_id',
         'location_id',
+        'status',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
         'total_cost_amount',
         'notes',
     ];
 
     protected $casts = [
         'receipt_date' => 'date',
+        'approved_at' => 'datetime',
         'total_cost_amount' => 'decimal:2',
     ];
 
@@ -31,6 +36,11 @@ class GoodsReceipt extends Model
     public function receiver()
     {
         return $this->belongsTo(User::class, 'receiver_id');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function location()
