@@ -1,8 +1,8 @@
-const CACHE_NAME = 'pos-kantin-v3';
+const CACHE_NAME = 'pos-kantin-v4';
 const URLS_TO_CACHE = [
-  '/',
-  '/images/logo.png?v=3',
-  '/manifest.json'
+  '/pos-kantin/',
+  '/pos-kantin/images/logo.png?v=3',
+  '/pos-kantin/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -35,7 +35,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
-        return caches.match('/');
+        return caches.match('/pos-kantin/');
       })
     );
     return;

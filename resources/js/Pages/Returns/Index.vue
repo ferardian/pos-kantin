@@ -373,7 +373,7 @@ const buildReturnDotMatrixHtml = (ret) => {
     const storeAddress = props.settings?.store_address || 'Jl. Raya Pekalongan No. 88';
     const storePhone = props.settings?.store_phone || '0812-3456-7890';
     const storeEmail = props.settings?.store_email || 'trisnajaya050@gmail.com';
-    const storeLogo = props.settings?.store_logo || '/images/logo.png';
+    const storeLogo = props.settings?.store_logo || '/pos-kantin/images/logo.png';
 
     const storeNameDisplay = (storeName && storeName.trim() !== '') ? storeName : 'TRISNA JAYA LISTRIK';
     const storeAddressDisplay = storeAddress || 'Jl. Raya Karanganyar, Kebonsari, Karangsari, Kab. Pekalongan';
@@ -1225,7 +1225,7 @@ const printDocument = () => {
                     <!-- Header Section -->
                     <div class="flex justify-between items-start">
                         <div class="flex items-start gap-2.5">
-                            <img :src="settings?.store_logo || '/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain shrink-0 mt-0.5" />
+                            <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain shrink-0 mt-0.5" />
                             <div>
                                 <h2 class="font-black text-base uppercase tracking-tight text-slate-950">{{ settings?.store_name || 'TRISNA JAYA LISTRIK' }}</h2>
                                 <p class="text-[11px] text-slate-600 mt-0.5">Alamat : {{ settings?.store_address || 'Jl. Raya Pekalongan No. 88' }}</p>
@@ -1344,7 +1344,7 @@ const printDocument = () => {
                 <div v-else id="printable-document-a4" class="p-8 space-y-6 flex-1 overflow-y-auto bg-white">
                     <div class="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
                         <div class="flex items-center gap-3">
-                            <img :src="settings?.store_logo || '/images/logo.png'" alt="Logo Trisna Jaya" class="w-14 h-14 object-contain" />
+                            <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo Trisna Jaya" class="w-14 h-14 object-contain" />
                             <div>
                                 <h2 class="text-xl font-black tracking-tight text-slate-950 uppercase">{{ settings?.store_name || 'TRISNA JAYA LISTRIK' }}</h2>
                                 <p class="text-xs text-slate-600 font-medium">Distributor & Suplier Perlengkapan Listrik</p>

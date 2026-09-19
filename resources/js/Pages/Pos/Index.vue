@@ -625,7 +625,7 @@ const buildPrintReceiptHtml = (trx, format, st, user) => {
     const invoiceTerms = st.invoice_terms || 'Barang yang sudah diterima dalam kondisi baik menjadi tanggung jawab pembeli.';
     const receiptFooter = st.receipt_footer || 'Terima kasih atas kunjungan Anda!';
     const cashierName = user?.name || 'Kasir';
-    const storeLogo = st.store_logo || '/images/logo.png';
+    const storeLogo = st.store_logo || '/pos-kantin/images/logo.png';
 
     const items = trx.items || [];
     const invoiceNum = trx.invoice_number || 'INV-00000';
@@ -2488,7 +2488,7 @@ onUnmounted(() => {
                             </div>
 
                             <div class="text-center border-b border-dashed border-slate-300 pb-2.5">
-                                <img :src="settings.store_logo || '/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain mx-auto mb-1" />
+                                <img :src="settings.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain mx-auto mb-1" />
                                 <h2 class="font-black text-xs uppercase tracking-tight">{{ settings.store_name || 'KOPERASI RSIA AISYIYAH PEKAJANGAN' }}</h2>
                                 <p class="text-[9px] text-slate-600">{{ settings.store_tagline || 'Kantin & Koperasi RSIA Aisyiyah Pekajangan' }}</p>
                                 <p class="text-[9px] text-slate-600">{{ settings.store_address }}</p>
@@ -2574,7 +2574,7 @@ onUnmounted(() => {
                             <!-- Header Section -->
                             <div class="flex justify-between items-start">
                                 <div class="flex items-start gap-2.5">
-                                    <img :src="settings.store_logo || '/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain shrink-0 mt-0.5" />
+                                    <img :src="settings.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain shrink-0 mt-0.5" />
                                     <div>
                                         <h2 class="font-black text-base uppercase tracking-tight text-slate-950">{{ settings.store_name || 'KOPERASI RSIA AISYIYAH PEKAJANGAN' }}</h2>
                                         <p class="text-[11px] text-slate-600 mt-0.5">Alamat : {{ settings.store_address || 'Jl. Raya Pantura No. 99, Pekalongan' }}</p>
@@ -2716,7 +2716,7 @@ onUnmounted(() => {
                             <!-- Header A4 -->
                             <div class="flex justify-between items-start border-b border-slate-200 pb-5">
                                 <div class="flex items-center gap-3">
-                                    <img :src="settings.store_logo || '/images/logo.png'" alt="Logo" class="w-14 h-14 object-contain" />
+                                    <img :src="settings.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-14 h-14 object-contain" />
                                     <div>
                                         <h1 class="text-lg font-black text-slate-900 uppercase tracking-tight">{{ settings.store_name || 'KOPERASI RSIA AISYIYAH PEKAJANGAN' }}</h1>
                                         <p class="text-xs text-amber-600 font-bold">{{ settings.store_tagline || 'Kantin & Koperasi RSIA Aisyiyah Pekajangan' }}</p>

@@ -3,22 +3,23 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <base href="/pos-kantin/">
     <title>Kantin RSIA Aisyiyah Pekajangan</title>
 
     <!-- PWA & Mobile Web App Meta -->
-    <link rel="manifest" href="/manifest.json?v=4">
+    <link rel="manifest" href="/pos-kantin/manifest.json?v=4">
     <meta name="theme-color" content="#059669">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Kantin RSIA">
-    <link rel="apple-touch-icon" href="/images/logo-512.png?v=4">
+    <link rel="apple-touch-icon" href="/pos-kantin/images/logo-512.png?v=4">
 
     <!-- Favicon -->
-    <link rel="shortcut icon" href="/favicon.ico?v=4">
-    <link rel="icon" type="image/png" sizes="64x64" href="/images/favicon.png?v=4">
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png?v=4">
-    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg?v=4">
+    <link rel="shortcut icon" href="/pos-kantin/favicon.ico?v=4">
+    <link rel="icon" type="image/png" sizes="64x64" href="/pos-kantin/images/favicon.png?v=4">
+    <link rel="icon" type="image/png" sizes="32x32" href="/pos-kantin/images/favicon-32.png?v=4">
+    <link rel="icon" type="image/svg+xml" href="/pos-kantin/images/favicon.svg?v=4">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,7 +36,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=3')
+                navigator.serviceWorker.register('/pos-kantin/sw.js?v=4', { scope: '/pos-kantin/' })
                     .then(reg => {
                         reg.update();
                         console.log('PWA Service Worker updated:', reg.scope);

@@ -509,7 +509,7 @@ const formatTextWithBreaks = (text) => {
 const buildPickingSlipHtml = (order) => {
     const rawDate = order.order_date ? new Date(order.order_date).toLocaleDateString('id-ID') : new Date().toLocaleDateString('id-ID');
     const items = order.items || [];
-    const storeLogo = props.settings?.store_logo || '/images/logo.png';
+    const storeLogo = props.settings?.store_logo || '/pos-kantin/images/logo.png';
     const storeName = props.settings?.store_name || 'TRISNA JAYA LISTRIK';
     const storeAddress = props.settings?.store_address || 'Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890';
     
@@ -631,7 +631,7 @@ const buildSuratJalanHtml = (order) => {
     const rawDate = order.delivery_date ? new Date(order.delivery_date).toLocaleDateString('id-ID') : (order.order_date ? new Date(order.order_date).toLocaleDateString('id-ID') : new Date().toLocaleDateString('id-ID'));
     const items = (order.items || []).filter(it => it.status !== 'out_of_stock');
     const custName = order.customer?.name || 'Pelanggan Proyek';
-    const storeLogo = props.settings?.store_logo || '/images/logo.png';
+    const storeLogo = props.settings?.store_logo || '/pos-kantin/images/logo.png';
     const storeName = props.settings?.store_name || 'TRISNA JAYA LISTRIK';
     const storeAddress = props.settings?.store_address || 'Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890';
 
@@ -762,7 +762,7 @@ const buildSalesOrderInvoiceHtml = (order) => {
     const rawDate = order.order_date ? new Date(order.order_date).toLocaleDateString('id-ID') : new Date().toLocaleDateString('id-ID');
     const items = (order.items || []).filter(it => it.status !== 'out_of_stock');
     const custName = order.customer?.name || 'Pelanggan Proyek';
-    const storeLogo = props.settings?.store_logo || '/images/logo.png';
+    const storeLogo = props.settings?.store_logo || '/pos-kantin/images/logo.png';
     const storeName = props.settings?.store_name || 'TRISNA JAYA LISTRIK';
     const storeAddress = props.settings?.store_address || 'Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890';
 
@@ -945,7 +945,7 @@ const buildSalesOrderDotMatrixHtml = (order) => {
     const storeAddress = props.settings?.store_address || 'Jl. Raya Pantura No. 99, Pekalongan';
     const storePhone = props.settings?.store_phone || '+62 815 7345 5951';
     const storeEmail = props.settings?.store_email || 'trisnajaya050@gmail.com';
-    const storeLogo = props.settings?.store_logo || '/images/logo.png';
+    const storeLogo = props.settings?.store_logo || '/pos-kantin/images/logo.png';
     const bankInfo = props.settings?.bank_info || 'Bank : BCA\nNo. Rekening : 2501294511\nAtas Nama : YUNIAR DWI RAHMAWATI';
 
     const storeNameDisplay = (storeName && storeName.trim() !== '') ? storeName : 'TRISNA JAYA LISTRIK';
@@ -1933,7 +1933,7 @@ const printDocument = (type = 'invoice') => {
                 <div id="printable-picking" class="p-8 space-y-6 flex-1 overflow-y-auto bg-white">
                     <div class="border-b-2 border-slate-900 pb-4 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <img :src="settings?.store_logo || '/images/logo.png'" alt="Logo" class="w-14 h-14 object-contain" />
+                            <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-14 h-14 object-contain" />
                             <div>
                                 <h2 class="text-lg font-black tracking-tight text-slate-950 uppercase">TRISNA JAYA LISTRIK</h2>
                                 <p class="text-xs text-slate-600">Jl. Raya Utama No. 88 &bull; Telp/WA: 0812-3456-7890</p>
@@ -2079,7 +2079,7 @@ const printDocument = (type = 'invoice') => {
                 <div id="printable-suratjalan" class="p-8 space-y-6 flex-1 overflow-y-auto bg-white">
                     <div class="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
                         <div class="flex items-center gap-3">
-                            <img :src="settings?.store_logo || '/images/logo.png'" alt="Logo" class="w-14 h-14 object-contain" />
+                            <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-14 h-14 object-contain" />
                             <div>
                                 <h2 class="text-xl font-black tracking-tight text-slate-950 uppercase">TRISNA JAYA LISTRIK</h2>
                                 <p class="text-xs text-slate-600 font-medium">Distributor & Suplier Peralatan Listrik Gedung / Proyek</p>
@@ -2202,7 +2202,7 @@ const printDocument = (type = 'invoice') => {
                     <!-- Header Section -->
                     <div class="flex justify-between items-start">
                         <div class="flex items-start gap-2.5">
-                            <img :src="settings?.store_logo || '/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain shrink-0 mt-0.5" />
+                            <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo" class="w-10 h-10 object-contain shrink-0 mt-0.5" />
                             <div>
                                 <h2 class="font-black text-base uppercase tracking-tight text-slate-950">{{ settings?.store_name || 'TRISNA JAYA LISTRIK' }}</h2>
                                 <p class="text-[11px] text-slate-600 mt-0.5">Alamat : {{ settings?.store_address || 'Jl. Raya Pantura No. 99, Pekalongan' }}</p>
@@ -2334,7 +2334,7 @@ const printDocument = (type = 'invoice') => {
                 <div v-else id="printable-invoice" class="p-8 space-y-6 flex-1 overflow-y-auto bg-white">
                     <div class="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
                         <div class="flex items-center gap-3">
-                            <img :src="settings?.store_logo || '/images/logo.png'" alt="Logo Trisna Jaya" class="w-14 h-14 object-contain" />
+                            <img :src="settings?.store_logo || '/pos-kantin/images/logo.png'" alt="Logo Trisna Jaya" class="w-14 h-14 object-contain" />
                             <div>
                                 <h2 class="text-xl font-black tracking-tight text-slate-950 uppercase">{{ settings?.store_name || 'TRISNA JAYA LISTRIK' }}</h2>
                                 <p class="text-xs text-slate-600 font-medium">Distributor & Perlengkapan Listrik Proyek</p>

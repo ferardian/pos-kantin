@@ -37,7 +37,7 @@ const fillDemo = (email, password, role) => {
             <div class="text-center space-y-3">
                 <div class="w-20 h-20 mx-auto rounded-3xl bg-emerald-50/80 border border-emerald-200/60 p-2.5 flex items-center justify-center shadow-xs">
                     <img 
-                        :src="$page.props.settings?.store_logo ? ($page.props.settings.store_logo + '?v=3') : '/images/logo.png?v=3'" 
+                        :src="$page.props.settings?.store_logo ? ($page.props.settings.store_logo + '?v=3') : '/pos-kantin/images/logo.png?v=3'" 
                         alt="Logo Kantin RSIA" 
                         class="w-full h-full object-contain" 
                     />

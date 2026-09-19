@@ -20,10 +20,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (str_starts_with(config('app.url'), 'https://') && !app()->runningInConsole()) {
+        if (!app()->runningInConsole()) {
+            $proto = request()->header('x-forwarded-proto');
             $host = request()->getHost();
-            // Jangan paksa HTTPS jika diakses via IP Lokal (LAN) atau localhost
-            if (!in_array($host, ['localhost', '127.0.0.1']) && !filter_var($host, FILTER_VALIDATE_IP) && !str_ends_with($host, '.test') && !str_ends_with($host, '.local')) {
+            if ($proto === 'https' || (!filter_var($host, FILTER_VALIDATE_IP) && !in_array($host, ['localhost', '127.0.0.1']) && !str_ends_with($host, '.test') && !str_ends_with($host, '.local'))) {
                 URL::forceScheme('https');
             }
         }

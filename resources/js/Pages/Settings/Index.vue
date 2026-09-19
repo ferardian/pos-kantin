@@ -13,7 +13,7 @@ const props = defineProps({
     settings: Object,
 });
 
-const logoPreview = ref(props.settings.store_logo || '/images/logo.png');
+const logoPreview = ref(props.settings.store_logo || '/pos-kantin/images/logo.png');
 const fileInput = ref(null);
 
 const form = useForm({
@@ -52,7 +52,7 @@ const onLogoChange = (e) => {
 const resetToDefaultLogo = () => {
     form.logo = null;
     form.remove_logo = true;
-    logoPreview.value = '/images/logo.png';
+    logoPreview.value = '/pos-kantin/images/logo.png';
     if (fileInput.value) {
         fileInput.value.value = '';
     }

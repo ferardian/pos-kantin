@@ -223,7 +223,7 @@ const printTransferSlip = (transfer) => {
                 <tr>
                     <td style="width: 58%; vertical-align: middle;">
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <img src="${props.settings?.store_logo || '/images/logo.png'}" alt="Logo" style="width: 52px; height: 52px; object-fit: contain;" />
+                            <img src="${props.settings?.store_logo || '/pos-kantin/images/logo.png'}" alt="Logo" style="width: 52px; height: 52px; object-fit: contain;" />
                             <div>
                                 <h1 style="margin: 0; font-size: 16px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 0.5px;">${props.settings?.store_name || 'TRISNA JAYA LISTRIK'}</h1>
                                 <div style="font-size: 10px; font-weight: bold; color: #d97706; text-transform: uppercase;">Logistik & Mutasi Stok Internal</div>
