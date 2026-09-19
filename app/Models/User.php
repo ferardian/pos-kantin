@@ -13,6 +13,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'role',
@@ -34,7 +35,6 @@ class User extends Authenticatable
         ];
     }
 
-
     public function transactions()
     {
         return $this->hasMany(Transaction::class, 'cashier_id');
@@ -44,5 +44,4 @@ class User extends Authenticatable
     {
         return $this->hasMany(StockAdjustment::class);
     }
-
 }

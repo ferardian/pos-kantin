@@ -20,15 +20,30 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+        $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
         ]);
 
-        if (Auth::attempt($credentials, $request->remember ?? true)) {
+        $loginInput = trim($request->input('username'));
+        $password = $request->input('password');
+        $remember = $request->boolean('remember', true);
+
+        // Attempt login by username first, fallback to email
+        $attempt = Auth::attempt(['username' => $loginInput, 'password' => $password], $remember)
+                || Auth::attempt(['email' => $loginInput, 'password' => $password], $remember);
+
+        if ($attempt) {
+            $user = Auth::user();
+            if (!$user->is_active) {
+                Auth::logout();
+                return back()->withErrors([
+                    'username' => 'Akun Anda sedang dinonaktifkan. Silakan hubungi Administrator.',
+                ]);
+            }
+
             $request->session()->regenerate();
             
-            $user = Auth::user();
             if ($user->role === 'sales') {
                 return redirect()->intended(route('sales.index'));
             }
@@ -36,14 +51,14 @@ class AuthController extends Controller
         }
 
         return back()->withErrors([
-            'email' => 'Email atau password yang Anda masukkan salah.',
+            'username' => 'Username atau kata sandi yang Anda masukkan salah.',
         ]);
     }
 
     public function quickLogin(Request $request)
     {
         $request->validate(['role' => 'required|string']);
-        $user = User::where('role', $request->role)->first();
+        $user = User::where('role', $request->role)->where('is_active', true)->first();
         if ($user) {
             Auth::login($user);
             $request->session()->regenerate();

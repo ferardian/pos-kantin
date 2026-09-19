@@ -2,12 +2,12 @@
 import { ref } from 'vue';
 import { useForm, Head } from '@inertiajs/vue3';
 import { 
-    Lock, Mail, ArrowRight, ShieldCheck, UserCheck, 
-    Sparkles, Shield, ShoppingBag, KeyRound, Check
+    Lock, User, ArrowRight, ShieldCheck, 
+    Sparkles, Shield, ShoppingBag
 } from 'lucide-vue-next';
 
 const form = useForm({
-    email: '',
+    username: '',
     password: '',
     remember: true,
 });
@@ -18,9 +18,9 @@ const submit = () => {
 
 const activeDemo = ref(null);
 
-const fillDemo = (email, password, role) => {
+const fillDemo = (username, password, role) => {
     activeDemo.value = role;
-    form.email = email;
+    form.username = username;
     form.password = password;
     setTimeout(() => {
         submit();
@@ -69,7 +69,7 @@ const fillDemo = (email, password, role) => {
                     <!-- Admin Button -->
                     <button 
                         type="button"
-                        @click="fillDemo('admin@rsia-aisyiyah.com', 'password123', 'admin')"
+                        @click="fillDemo('admin', 'password123', 'admin')"
                         :disabled="form.processing"
                         class="p-2.5 bg-white hover:bg-emerald-600 border border-slate-200 hover:border-emerald-600 text-slate-800 hover:text-white rounded-xl text-left transition shadow-xs group cursor-pointer active:scale-97 flex flex-col justify-between"
                     >
@@ -83,14 +83,14 @@ const fillDemo = (email, password, role) => {
                         </div>
                         <div>
                             <div class="text-xs font-black leading-tight">Admin Koperasi</div>
-                            <div class="text-[10px] opacity-70 font-mono mt-0.5">admin@rsia...</div>
+                            <div class="text-[10px] opacity-70 font-mono mt-0.5">username: admin</div>
                         </div>
                     </button>
 
                     <!-- Kasir Button -->
                     <button 
                         type="button"
-                        @click="fillDemo('kasir@rsia-aisyiyah.com', 'kasir123', 'kasir')"
+                        @click="fillDemo('kasir', 'kasir123', 'kasir')"
                         :disabled="form.processing"
                         class="p-2.5 bg-white hover:bg-emerald-600 border border-slate-200 hover:border-emerald-600 text-slate-800 hover:text-white rounded-xl text-left transition shadow-xs group cursor-pointer active:scale-97 flex flex-col justify-between"
                     >
@@ -104,7 +104,7 @@ const fillDemo = (email, password, role) => {
                         </div>
                         <div>
                             <div class="text-xs font-black leading-tight">Kasir Kantin</div>
-                            <div class="text-[10px] opacity-70 font-mono mt-0.5">kasir@rsia...</div>
+                            <div class="text-[10px] opacity-70 font-mono mt-0.5">username: kasir</div>
                         </div>
                     </button>
                 </div>
@@ -112,21 +112,22 @@ const fillDemo = (email, password, role) => {
 
             <div class="relative flex py-1 items-center">
                 <div class="flex-grow border-t border-slate-200"></div>
-                <span class="flex-shrink mx-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">atau login manual</span>
+                <span class="flex-shrink mx-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">atau login username</span>
                 <div class="flex-grow border-t border-slate-200"></div>
             </div>
 
             <!-- Login Form -->
             <form @submit.prevent="submit" class="space-y-4 text-xs">
                 <div>
-                    <label class="block text-slate-700 font-bold mb-1.5">Email Pengguna</label>
+                    <label class="block text-slate-700 font-bold mb-1.5">Username Pengguna</label>
                     <div class="relative">
-                        <Mail class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <User class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input 
-                            v-model="form.email" 
-                            type="email" 
+                            v-model="form.username" 
+                            type="text" 
                             required 
-                            placeholder="admin@rsia-aisyiyah.com"
+                            placeholder="admin atau kasir"
+                            autocomplete="username"
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition shadow-xs"
                         />
                     </div>
@@ -141,13 +142,14 @@ const fillDemo = (email, password, role) => {
                             type="password" 
                             required 
                             placeholder="••••••••"
+                            autocomplete="current-password"
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition shadow-xs"
                         />
                     </div>
                 </div>
 
-                <div v-if="form.errors.email" class="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-[11px] text-rose-700 font-medium">
-                    {{ form.errors.email }}
+                <div v-if="form.errors.username" class="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-[11px] text-rose-700 font-medium">
+                    {{ form.errors.username }}
                 </div>
 
                 <button 

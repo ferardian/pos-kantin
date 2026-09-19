@@ -27,13 +27,15 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
+            'username' => 'required|string|max:50|unique:users,username',
+            'email' => 'nullable|string|email|max:255|unique:users,email',
             'phone' => 'nullable|string|max:50',
             'role' => 'required|in:admin,kasir,gudang',
             'password' => 'required|string|min:6',
             'is_active' => 'boolean',
         ]);
 
+        $validated['username'] = strtolower(trim($validated['username']));
         $validated['password'] = Hash::make($validated['password']);
         $validated['is_active'] = $validated['is_active'] ?? true;
 
@@ -48,12 +50,15 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'username' => ['required', 'string', 'max:50', Rule::unique('users')->ignore($user->id)],
+            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'phone' => 'nullable|string|max:50',
             'role' => 'required|in:admin,kasir,gudang',
             'password' => 'nullable|string|min:6',
             'is_active' => 'boolean',
         ]);
+
+        $validated['username'] = strtolower(trim($validated['username']));
 
         // Prevent admin from deactivating or demoting themselves
         if ($user->id === Auth::id()) {
@@ -111,13 +116,13 @@ class UserController extends Controller
 
         // Check if user has related records (transactions or sales orders)
         $hasTransactions = $user->transactions()->exists();
-        $hasOrders = $user->salesOrders()->exists();
+        $hasOrders = method_exists($user, 'salesOrders') && $user->salesOrders()->exists();
 
         if ($hasTransactions || $hasOrders) {
             // Soft deactivation to maintain historical integrity
             $user->is_active = false;
             $user->save();
-            return back()->with('success', "Akun {$user->name} dinonaktifkan karena memiliki riwayat transaksi/pesanan sebelumnya.");
+            return back()->with('success', "Akun {$user->name} dinonaktifkan karena memiliki riwayat transaksi sebelumnya.");
         }
 
         $userName = $user->name;

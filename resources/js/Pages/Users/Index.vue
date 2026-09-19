@@ -31,6 +31,7 @@ const showResetPassword = ref(false);
 // Forms
 const addForm = useForm({
     name: '',
+    username: '',
     email: '',
     phone: '',
     role: 'kasir',
@@ -41,6 +42,7 @@ const addForm = useForm({
 const editForm = useForm({
     id: null,
     name: '',
+    username: '',
     email: '',
     phone: '',
     role: 'kasir',
@@ -96,6 +98,7 @@ const filteredUsers = computed(() => {
     return (props.users || []).filter(u => {
         const matchesQuery = !q || 
             (u.name && u.name.toLowerCase().includes(q)) || 
+            (u.username && u.username.toLowerCase().includes(q)) || 
             (u.email && u.email.toLowerCase().includes(q)) || 
             (u.phone && u.phone.toLowerCase().includes(q));
 
@@ -128,7 +131,8 @@ const openEditModal = (user) => {
     selectedUser.value = user;
     editForm.id = user.id;
     editForm.name = user.name;
-    editForm.email = user.email;
+    editForm.username = user.username || '';
+    editForm.email = user.email || '';
     editForm.phone = user.phone || '';
     editForm.role = user.role;
     editForm.is_active = Boolean(user.is_active);
@@ -279,7 +283,7 @@ const deleteUser = (user) => {
                     <input 
                         v-model="searchQuery" 
                         type="text" 
-                        placeholder="Cari nama, email, atau nomor HP..." 
+                        placeholder="Cari nama, username, atau nomor HP..." 
                         class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition"
                     />
                 </div>
@@ -353,6 +357,10 @@ const deleteUser = (user) => {
                         <!-- Contact Details -->
                         <div class="text-xs text-slate-600 space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
                             <p class="flex items-center gap-2 truncate">
+                                <User class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span class="truncate font-bold text-slate-900">@{{ u.username || '-' }}</span>
+                            </p>
+                            <p v-if="u.email" class="flex items-center gap-2 truncate">
                                 <Mail class="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                 <span class="truncate font-medium text-slate-700">{{ u.email }}</span>
                             </p>
@@ -439,17 +447,32 @@ const deleteUser = (user) => {
                     </div>
 
                     <div>
-                        <label class="block text-slate-700 font-bold mb-1">Alamat Email (Username Login)</label>
+                        <label class="block text-slate-700 font-bold mb-1">Username Login</label>
+                        <div class="relative">
+                            <User class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input 
+                                v-model="addForm.username" 
+                                type="text" 
+                                required 
+                                placeholder="Contoh: ulfa, kasir1, budi" 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition" 
+                            />
+                        </div>
+                        <p v-if="addForm.errors.username" class="text-[11px] text-rose-600 mt-1 font-semibold">{{ addForm.errors.username }}</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-700 font-bold mb-1">Alamat Email (Opsional)</label>
                         <div class="relative">
                             <Mail class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                             <input 
                                 v-model="addForm.email" 
                                 type="email" 
-                                required 
-                                placeholder="staff@rsiaaisyiyah.com" 
+                                placeholder="staff@rsiaaisyiyah.com (opsional)" 
                                 class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition" 
                             />
                         </div>
+                        <p v-if="addForm.errors.email" class="text-[11px] text-rose-600 mt-1 font-semibold">{{ addForm.errors.email }}</p>
                     </div>
 
                     <div>
@@ -550,16 +573,32 @@ const deleteUser = (user) => {
                     </div>
 
                     <div>
-                        <label class="block text-slate-700 font-bold mb-1">Alamat Email (Login)</label>
+                        <label class="block text-slate-700 font-bold mb-1">Username Login</label>
+                        <div class="relative">
+                            <User class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input 
+                                v-model="editForm.username" 
+                                type="text" 
+                                required 
+                                placeholder="Contoh: ulfa" 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition" 
+                            />
+                        </div>
+                        <p v-if="editForm.errors.username" class="text-[11px] text-rose-600 mt-1 font-semibold">{{ editForm.errors.username }}</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-700 font-bold mb-1">Alamat Email (Opsional)</label>
                         <div class="relative">
                             <Mail class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                             <input 
                                 v-model="editForm.email" 
                                 type="email" 
-                                required 
+                                placeholder="staff@rsiaaisyiyah.com (opsional)" 
                                 class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition" 
                             />
                         </div>
+                        <p v-if="editForm.errors.email" class="text-[11px] text-rose-600 mt-1 font-semibold">{{ editForm.errors.email }}</p>
                     </div>
 
                     <div>
@@ -621,7 +660,7 @@ const deleteUser = (user) => {
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                     <div>
                         <h3 class="text-sm font-black text-slate-900">Ubah Kata Sandi (Password)</h3>
-                        <p class="text-[11px] text-slate-400">Pengguna: {{ selectedUser?.name }} ({{ selectedUser?.email }})</p>
+                        <p class="text-[11px] text-slate-400">Pengguna: {{ selectedUser?.name }} (@{{ selectedUser?.username || selectedUser?.email }})</p>
                     </div>
                     <button @click="isResetPasswordModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
                         <X class="w-5 h-5" />
