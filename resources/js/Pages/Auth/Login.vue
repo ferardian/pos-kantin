@@ -35,7 +35,7 @@ const submit = () => {
                     </h1>
                     <p class="text-xs text-emerald-700 font-semibold mt-1 flex items-center justify-center gap-1.5">
                         <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        {{ $page.props.settings?.store_tagline || 'Sistem Kasir Kantin & Bon Karyawan' }}
+                        {{ $page.props.settings?.store_tagline || 'Sistem Kasir Kantin' }}
                     </p>
                 </div>
             </div>
