@@ -346,7 +346,7 @@ const printBap = (opname) => {
 <template>
     <Head title="Stok Opname Toko" />
     <MainLayout>
-        <div class="space-y-6 max-w-7xl mx-auto pb-12">
+        <div class="p-6 lg:p-8 w-full space-y-6 max-w-7xl mx-auto pb-16">
             
             <!-- Header Halaman Stok Opname -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
@@ -357,7 +357,10 @@ const printBap = (opname) => {
                     <div>
                         <div class="flex items-center gap-2">
                             <h2 class="text-lg font-black tracking-tight text-slate-900">Stok Opname & Audit Fisik</h2>
-                            <span class="px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-400 font-black text-[10px] uppercase tracking-wider">
+                            <span v-if="currentUser?.role === 'kasir'" class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase tracking-wider">
+                                Akses Kasir (Diizinkan Admin)
+                            </span>
+                            <span v-else class="px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-400 font-black text-[10px] uppercase tracking-wider">
                                 Khusus Admin & Gudang
                             </span>
                         </div>
