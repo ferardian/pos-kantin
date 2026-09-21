@@ -78,6 +78,7 @@ const selectedCustomer = ref(
         : { id: null, name: 'Pelanggan Umum', tier: 'eceran' }
 );
 const activePriceTier = ref(selectedCustomer.value?.tier || 'eceran'); // Can be overridden
+const priceType = ref('umum'); // 'umum' | 'karyawan'
 const cart = ref([]);
 const isMobileCartOpen = ref(false);
 const isCheckoutOpen = ref(false);
@@ -130,6 +131,8 @@ const priceTiers = [
 // Payment Form
 const checkoutForm = useForm({
     customer_id: selectedCustomer.value?.id || null,
+    price_type: 'umum',
+    employee_id: null,
     items: [],
     total_gross: 0,
     discount: 0,
@@ -181,10 +184,28 @@ const filteredProducts = computed(() => {
     });
 });
 
-// 4 Price Tiers calculation
+// Dual pricing calculation (Umum vs Karyawan)
 const getUnitPrice = (unit) => {
     if (!unit) return 0;
+    if (priceType.value === 'karyawan') {
+        const empPrice = Number(unit.price_employee);
+        if (empPrice > 0) return empPrice;
+    }
     return Number(unit.price_retail || 0);
+};
+
+const setPriceType = (type) => {
+    priceType.value = type;
+    // Recalculate existing items in cart
+    cart.value.forEach(item => {
+        item.unit_price = getUnitPrice(item.unit);
+        item.subtotal = item.qty * item.unit_price;
+    });
+    focusSearchInput();
+};
+
+const togglePriceType = () => {
+    setPriceType(priceType.value === 'umum' ? 'karyawan' : 'umum');
 };
 
 const getTierLabel = (tier) => {
@@ -442,12 +463,12 @@ const openCheckout = () => {
         unit_price: i.unit_price,
         subtotal: i.subtotal,
     }));
+    checkoutForm.price_type = priceType.value;
+    checkoutForm.employee_id = selectedEmployeeId.value || null;
     checkoutForm.total_gross = subtotalGross.value;
     checkoutForm.total_net = totalNet.value;
     checkoutForm.paid_amount = totalNet.value;
     isReceivableChecked.value = false;
-    selectedEmployeeId.value = '';
-    employeeSearchQuery.value = '';
     isEmployeeDropdownOpen.value = false;
     receivableAmount.value = 0;
     receivableNotes.value = '';
@@ -562,15 +583,28 @@ const submitCheckout = () => {
             return;
         }
     }
+    checkoutForm.price_type = priceType.value;
+    checkoutForm.employee_id = selectedEmployeeId.value || null;
+
     checkoutForm.post('/pos/checkout', {
         onSuccess: () => {
             isCheckoutOpen.value = false;
             isMobileCartOpen.value = false;
+            const isKaryawan = priceType.value === 'karyawan' || !!selectedEmployeeObj.value;
+            const finalCustomerName = selectedEmployeeObj.value 
+                ? (selectedEmployeeObj.value.name + (selectedEmployeeObj.value.department ? ` (${selectedEmployeeObj.value.department})` : '')) 
+                : (isKaryawan ? 'Karyawan RSIA' : 'Pelanggan Umum');
+            const finalTierLabel = isKaryawan ? 'Karyawan' : 'Umum';
+
             lastTransaction.value = {
                 invoice_number: 'INV-' + Math.floor(Math.random() * 900000 + 100000),
-                customer: selectedCustomer.value,
-                customer_name: selectedCustomer.value?.name,
-                tier_label: getTierLabel(activePriceTier.value),
+                customer: {
+                    name: finalCustomerName,
+                    tier: finalTierLabel,
+                },
+                customer_name: finalCustomerName,
+                tier_label: finalTierLabel,
+                price_type: priceType.value,
                 items: [...cart.value],
                 total_gross: subtotalGross.value,
                 discount: checkoutForm.discount,
@@ -1278,7 +1312,7 @@ const handleKeyDown = (e) => {
         return;
     } else if (e.key === 'F4') {
         e.preventDefault();
-        isCustomerModalOpen.value = true;
+        togglePriceType();
         return;
     } else if (e.key === 'F9') {
         e.preventDefault();
@@ -1487,19 +1521,28 @@ onUnmounted(() => {
                             <span>{{ isTouchMode ? 'Mode Tab' : 'Mode PC' }}</span>
                         </button>
 
-                        <!-- Customer Selector Pill -->
-                        <button 
-                            @click="isCustomerModalOpen = true"
-                            class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-amber-400 transition text-left cursor-pointer active:scale-95 shrink-0"
-                            title="Pilih / Ganti Pelanggan"
-                        >
-                            <div class="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">
-                                <User class="w-3.5 h-3.5" />
-                            </div>
-                            <span class="text-xs font-bold text-slate-800 truncate max-w-[120px]">
-                                {{ selectedCustomer?.name || 'Pelanggan Umum' }}
-                            </span>
-                        </button>
+                        <!-- Dual Price Mode Toggle (Umum vs Karyawan F4) -->
+                        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+                            <button 
+                                type="button"
+                                @click="setPriceType('umum')"
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer"
+                                :class="priceType === 'umum' ? 'bg-white text-slate-950 shadow-xs ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900'"
+                                title="Gunakan Harga Umum"
+                            >
+                                <span>🛍️ Umum</span>
+                            </button>
+                            <button 
+                                type="button"
+                                @click="setPriceType('karyawan')"
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer"
+                                :class="priceType === 'karyawan' ? 'bg-amber-500 text-slate-950 shadow-xs ring-1 ring-amber-400' : 'text-slate-600 hover:text-slate-900'"
+                                title="Gunakan Harga Karyawan RSIA (Shortcut: Tekan F4)"
+                            >
+                                <span>👨‍💼 Karyawan</span>
+                                <span class="text-[10px] px-1 py-0.2 rounded font-mono font-bold" :class="priceType === 'karyawan' ? 'bg-amber-600/30 text-slate-950' : 'bg-slate-200 text-slate-500'">F4</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1617,7 +1660,12 @@ onUnmounted(() => {
                                 >
                                     <div class="min-w-0 pr-2">
                                         <p :class="isFewSearchResults ? 'text-xs sm:text-sm' : 'text-xs'" class="font-black text-amber-950 truncate">{{ unit.unit_name }}</p>
-                                        <p :class="isFewSearchResults ? 'text-xs sm:text-sm font-black' : 'text-[11px] font-extrabold'" class="text-amber-900">{{ formatRupiah(getUnitPrice(unit)) }}</p>
+                                        <div class="flex items-center gap-1">
+                                            <span v-if="priceType === 'karyawan' && unit.price_employee && Number(unit.price_employee) < Number(unit.price_retail)" class="line-through text-amber-700/70 text-[10px] font-normal">
+                                                {{ formatRupiah(unit.price_retail) }}
+                                            </span>
+                                            <p :class="isFewSearchResults ? 'text-xs sm:text-sm font-black' : 'text-[11px] font-extrabold'" class="text-amber-900">{{ formatRupiah(getUnitPrice(unit)) }}</p>
+                                        </div>
                                     </div>
                                     <div class="flex items-center gap-1.5 bg-white border border-amber-300 rounded-xl p-1 shadow-2xs shrink-0">
                                         <button 
@@ -1660,6 +1708,9 @@ onUnmounted(() => {
                                         </span>
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0">
+                                        <span v-if="priceType === 'karyawan' && unit.price_employee && Number(unit.price_employee) < Number(unit.price_retail)" class="line-through text-slate-400 text-[10px] font-normal">
+                                            {{ formatRupiah(unit.price_retail) }}
+                                        </span>
                                         <span :class="isFewSearchResults ? 'text-base font-black' : 'text-xs sm:text-sm font-black'">
                                             {{ formatRupiah(getUnitPrice(unit)) }}
                                         </span>
@@ -1740,6 +1791,28 @@ onUnmounted(() => {
                     >
                         <Trash2 class="w-3.5 h-3.5" />
                         <span>Kosongkan</span>
+                    </button>
+                </div>
+
+                <!-- Dual Price Mode Banner in Cart -->
+                <div class="px-4 py-2 border-b flex items-center justify-between transition-colors shrink-0"
+                    :class="priceType === 'karyawan' ? 'bg-amber-500/10 border-amber-300' : 'bg-slate-100/70 border-slate-200'"
+                >
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-black" :class="priceType === 'karyawan' ? 'text-amber-950' : 'text-slate-800'">
+                            {{ priceType === 'karyawan' ? '👨‍💼 Mode Karyawan' : '🛍️ Mode Umum' }}
+                        </span>
+                        <span v-if="priceType === 'karyawan'" class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-md font-bold">
+                            Diskon Pegawai
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        @click="togglePriceType"
+                        class="text-[11px] font-bold px-2 py-0.5 rounded-lg border transition cursor-pointer"
+                        :class="priceType === 'karyawan' ? 'bg-white text-amber-900 border-amber-300 hover:bg-amber-50' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'"
+                    >
+                        Ubah ke {{ priceType === 'karyawan' ? 'Umum' : 'Karyawan' }} (F4)
                     </button>
                 </div>
 
@@ -2147,8 +2220,20 @@ onUnmounted(() => {
                 <!-- Modal Header (Pinned) -->
                 <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white z-10">
                     <div>
-                        <h3 class="text-sm font-bold text-slate-900">Pembayaran Kasir</h3>
-                        <p class="text-xs text-slate-500">Pelanggan: <span class="text-slate-900 font-bold">{{ selectedCustomer?.name }}</span> </p>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-bold text-slate-900">Pembayaran Kasir</h3>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider"
+                                :class="priceType === 'karyawan' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200'"
+                            >
+                                {{ priceType === 'karyawan' ? '👨‍💼 Harga Karyawan' : '🛍️ Harga Umum' }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Pelanggan: 
+                            <span class="font-bold text-slate-900">
+                                {{ selectedEmployeeObj ? selectedEmployeeObj.name + ' (' + (selectedEmployeeObj.department || 'RSIA') + ')' : (priceType === 'karyawan' ? 'Karyawan RSIA' : 'Pelanggan Umum') }}
+                            </span>
+                        </p>
                     </div>
                     <button @click="isCheckoutOpen = false" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
                         <X class="w-5 h-5" />

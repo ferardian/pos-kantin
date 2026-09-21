@@ -21,7 +21,7 @@ class PosController extends Controller
             ->orWhereHas('units')
             ->get();
 
-        $recentTransactions = Transaction::with(['cashier', 'items.product', 'items.unit'])
+        $recentTransactions = Transaction::with(['cashier', 'employee', 'receivable.employee', 'items.product', 'items.unit'])
             ->latest()
             ->take(30)
             ->get();
@@ -51,6 +51,8 @@ class PosController extends Controller
             'paid_amount'    => 'required|numeric|min:0',
             'payment_method' => 'required|in:cash,qris',
             'notes'          => 'nullable|string',
+            'price_type'     => 'nullable|in:umum,karyawan',
+            'employee_id'    => 'nullable|exists:employees,id',
             // Piutang karyawan (kembalian dibawa)
             'employee_receivable'             => 'nullable|array',
             'employee_receivable.employee_id' => 'nullable|exists:employees,id',
@@ -63,9 +65,19 @@ class PosController extends Controller
             $invoiceNumber = 'KNT-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -5));
             $changeAmount = max(0, $validated['paid_amount'] - $validated['total_net']);
 
+            $empId = !empty($validated['employee_id']) 
+                ? $validated['employee_id'] 
+                : (!empty($validated['employee_receivable']['employee_id']) ? $validated['employee_receivable']['employee_id'] : null);
+
+            $priceType = !empty($validated['price_type']) 
+                ? $validated['price_type'] 
+                : (!empty($empId) ? 'karyawan' : 'umum');
+
             $transaction = Transaction::create([
                 'invoice_number' => $invoiceNumber,
                 'cashier_id'     => $user->id,
+                'price_type'     => $priceType,
+                'employee_id'    => $empId,
                 'total_gross'    => $validated['total_gross'],
                 'discount'       => $validated['discount'] ?? 0,
                 'total_net'      => $validated['total_net'],
@@ -137,6 +149,8 @@ class PosController extends Controller
                 'paid_amount'    => $transaction->paid_amount,
                 'change_amount'  => $transaction->change_amount,
                 'payment_method' => $transaction->payment_method,
+                'price_type'     => $transaction->price_type,
+                'customer_name'  => $transaction->customer->name,
                 'created_at'     => $transaction->created_at->format('d/m/Y H:i'),
             ]);
         });

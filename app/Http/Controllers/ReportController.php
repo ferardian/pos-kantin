@@ -135,7 +135,7 @@ class ReportController extends Controller
 
         // 9. Detailed Sales Transactions for Period
         $salesTransactions = (clone $trxQuery)
-            ->with(['cashier', 'receivable.employee', 'items.product', 'items.unit'])
+            ->with(['cashier', 'employee', 'receivable.employee', 'items.product', 'items.unit'])
             ->latest()
             ->get()
             ->map(function ($trx) {
@@ -151,10 +151,11 @@ class ReportController extends Controller
                 $trx->estimated_profit = $profit;
                 $trx->profit_margin = $margin;
 
-                $employee = $trx->receivable->first()?->employee;
+                $employee = $trx->employee ?? $trx->receivable->first()?->employee;
+                $isKaryawan = ($trx->price_type === 'karyawan') || ($employee !== null);
                 $trx->customer = (object) [
-                    'name' => $employee ? $employee->name : 'Pelanggan Umum',
-                    'tier' => $employee ? ($employee->department ? 'Karyawan (' . $employee->department . ')' : 'Karyawan') : 'Umum',
+                    'name' => $employee ? $employee->name : ($isKaryawan ? 'Karyawan RSIA' : 'Pelanggan Umum'),
+                    'tier' => $employee ? ($employee->department ? 'Karyawan (' . $employee->department . ')' : 'Karyawan') : ($isKaryawan ? 'Karyawan' : 'Umum'),
                 ];
 
                 return $trx;

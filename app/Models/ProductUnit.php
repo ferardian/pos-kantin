@@ -9,21 +9,27 @@ class ProductUnit extends Model
 {
     protected $fillable = [
         'product_id', 'unit_name', 'conversion_ratio',
-        'cost_price', 'price_retail', 'is_base_unit',
+        'cost_price', 'price_retail', 'price_employee', 'is_base_unit',
     ];
 
     protected $casts = [
         'conversion_ratio' => 'float',
         'cost_price'       => 'float',
         'price_retail'     => 'float',
+        'price_employee'   => 'float',
         'is_base_unit'     => 'boolean',
     ];
 
-    protected $appends = ['selling_price'];
+    protected $appends = ['selling_price', 'employee_price'];
 
     public function getSellingPriceAttribute()
     {
         return $this->price_retail;
+    }
+
+    public function getEmployeePriceAttribute()
+    {
+        return ($this->price_employee !== null && $this->price_employee > 0) ? (float)$this->price_employee : (float)$this->price_retail;
     }
 
     public function product(): BelongsTo

@@ -73,6 +73,7 @@ const addProductForm = useForm({
             conversion_ratio: 1,
             cost_price: 0,
             price_retail: 0,
+            price_employee: null,
             is_base_unit: true,
         }
     ]
@@ -307,6 +308,7 @@ const openEditModal = (product) => {
         conversion_ratio: Number(u.conversion_ratio),
         cost_price: Number(u.cost_price),
         price_retail: Number(u.price_retail),
+        price_employee: (u.price_employee !== null && u.price_employee !== undefined && Number(u.price_employee) > 0) ? Number(u.price_employee) : null,
         is_base_unit: Boolean(u.is_base_unit),
     }));
     isEditModalOpen.value = true;
@@ -318,6 +320,7 @@ const addEditUnitRow = () => {
         conversion_ratio: 12,
         cost_price: 0,
         price_retail: 0,
+        price_employee: null,
         is_base_unit: false,
     });
 };
@@ -566,6 +569,7 @@ const addUnitRow = () => {
         conversion_ratio: 12,
         cost_price: 0,
         price_retail: 0,
+        price_employee: null,
         is_base_unit: false,
     });
 };
@@ -1402,7 +1406,7 @@ const submitNewUnit = () => {
                                     <th class="py-3.5 px-4 bg-slate-50">Kategori / Merk</th>
                                     <th class="py-3.5 px-4 text-center bg-slate-50">Status Stok</th>
                                     <th v-if="canSeeCostPrice" class="py-3.5 px-4 bg-slate-50">HPP (Modal)</th>
-                                    <th class="py-3.5 px-4 bg-slate-50">Harga Jual</th>
+                                    <th class="py-3.5 px-4 bg-slate-50">Harga Jual (Umum & Karyawan)</th>
                                     <th class="py-3.5 px-4 text-center bg-slate-50">Aksi</th>
                                 </tr>
                             </thead>
@@ -1454,10 +1458,17 @@ const submitNewUnit = () => {
                                         </div>
                                     </td>
 
-                                    <td class="py-3.5 px-4 space-y-1">
-                                        <div v-for="u in product.units" :key="u.id" class="text-[11px]">
-                                            <span class="text-slate-400 font-semibold">{{ u.unit_name }}:</span>
-                                            <span class="text-slate-900 font-bold ml-1">{{ formatRupiah(u.price_retail) }}</span>
+                                    <td class="py-3.5 px-4 space-y-1.5 min-w-[170px]">
+                                        <div v-for="u in product.units" :key="u.id" class="text-[11px] leading-snug">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">{{ u.unit_name }}:</span>
+                                                <span class="text-slate-950 font-black">{{ formatRupiah(u.price_retail) }}</span>
+                                            </div>
+                                            <div class="flex items-center gap-1 text-[10px] text-amber-800 font-semibold pl-1">
+                                                <span class="text-slate-400 font-normal">Karyawan:</span>
+                                                <span class="font-bold">{{ formatRupiah(u.price_employee || u.price_retail) }}</span>
+                                                <span v-if="!u.price_employee" class="text-[9px] text-slate-400 font-normal italic">(sama)</span>
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
@@ -2422,14 +2433,18 @@ const submitNewUnit = () => {
                                     </div>
                                 </div>
 
-                                <div :class="['grid gap-2', canSeeCostPrice ? 'grid-cols-2' : 'grid-cols-1']">
+                                <div :class="['grid gap-2', canSeeCostPrice ? 'grid-cols-3' : 'grid-cols-2']">
                                     <div v-if="canSeeCostPrice">
                                         <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Modal (HPP)</label>
                                         <input v-model.number="unit.cost_price" type="number" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-800 font-bold" />
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Harga Jual</label>
+                                        <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Harga Umum</label>
                                         <input v-model.number="unit.price_retail" type="number" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 font-black" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-amber-700 mb-0.5">Harga Karyawan</label>
+                                        <input v-model.number="unit.price_employee" type="number" placeholder="Sama dgn umum" class="w-full bg-amber-50/50 border border-amber-300 rounded-lg px-2 py-1.5 text-xs text-amber-950 font-black placeholder:text-amber-400 placeholder:font-normal" />
                                     </div>
                                 </div>
                             </div>
@@ -2785,14 +2800,18 @@ const submitNewUnit = () => {
                                     </div>
                                 </div>
 
-                                <div :class="['grid gap-2', canSeeCostPrice ? 'grid-cols-2' : 'grid-cols-1']">
+                                <div :class="['grid gap-2', canSeeCostPrice ? 'grid-cols-3' : 'grid-cols-2']">
                                     <div v-if="canSeeCostPrice">
                                         <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Modal (HPP)</label>
                                         <input v-model.number="unit.cost_price" type="number" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-800 font-bold" />
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Harga Jual</label>
+                                        <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Harga Umum</label>
                                         <input v-model.number="unit.price_retail" type="number" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 font-black" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-amber-700 mb-0.5">Harga Karyawan</label>
+                                        <input v-model.number="unit.price_employee" type="number" placeholder="Sama dgn umum" class="w-full bg-amber-50/50 border border-amber-300 rounded-lg px-2 py-1.5 text-xs text-amber-950 font-black placeholder:text-amber-400 placeholder:font-normal" />
                                     </div>
                                 </div>
                             </div>

@@ -65,6 +65,7 @@ class ProductController extends Controller
             'units.*.conversion_ratio' => 'required|numeric|min:1',
             'units.*.cost_price' => 'nullable|numeric|min:0',
             'units.*.price_retail' => 'nullable|numeric|min:0',
+            'units.*.price_employee' => 'nullable|numeric|min:0',
             'units.*.is_base_unit' => 'required|boolean',
         ]);
 
@@ -114,6 +115,7 @@ class ProductController extends Controller
                     'conversion_ratio' => $unit['conversion_ratio'],
                     'cost_price' => $unit['cost_price'] ?? 0,
                     'price_retail' => $unit['price_retail'] ?? 0,
+                    'price_employee' => !empty($unit['price_employee']) ? $unit['price_employee'] : null,
                     'is_base_unit' => $unit['is_base_unit'],
                 ]);
             }
@@ -158,6 +160,7 @@ class ProductController extends Controller
             'units.*.conversion_ratio' => 'required|numeric|min:0.01',
             'units.*.cost_price' => 'required|numeric|min:0',
             'units.*.price_retail' => 'required|numeric|min:0',
+            'units.*.price_employee' => 'nullable|numeric|min:0',
             'units.*.is_base_unit' => 'required|boolean',
         ]);
 
@@ -182,6 +185,7 @@ class ProductController extends Controller
                             'conversion_ratio' => $unitData['conversion_ratio'],
                             'cost_price' => $unitData['cost_price'],
                             'price_retail' => $unitData['price_retail'],
+                            'price_employee' => !empty($unitData['price_employee']) ? $unitData['price_employee'] : null,
                             'is_base_unit' => $unitData['is_base_unit'],
                         ]);
                         $submittedUnitIds[] = $unit->id;
@@ -195,6 +199,7 @@ class ProductController extends Controller
                     'conversion_ratio' => $unitData['conversion_ratio'],
                     'cost_price' => $unitData['cost_price'],
                     'price_retail' => $unitData['price_retail'],
+                    'price_employee' => !empty($unitData['price_employee']) ? $unitData['price_employee'] : null,
                     'is_base_unit' => $unitData['is_base_unit'],
                 ]);
                 $submittedUnitIds[] = $newUnit->id;
@@ -451,10 +456,8 @@ class ProductController extends Controller
             if ($canSeeCostPrice) {
                 $html .= '<th style="background-color:#334155; color:#ffffff; text-align:right; width:95px;">HPP (Modal)</th>';
             }
-            $html .= '<th style="background-color:#1e293b; color:#ffffff; text-align:right; width:95px;">1. Retail</th>';
-            $html .= '<th style="background-color:#b45309; color:#ffffff; text-align:right; width:95px;">2. Bronze</th>';
-            $html .= '<th style="background-color:#d97706; color:#ffffff; text-align:right; width:95px;">3. Gold</th>';
-            $html .= '<th style="background-color:#0369a1; color:#ffffff; text-align:right; width:95px;">4. Diamond</th>';
+            $html .= '<th style="background-color:#1e293b; color:#ffffff; text-align:right; width:110px;">Harga Umum</th>';
+            $html .= '<th style="background-color:#d97706; color:#ffffff; text-align:right; width:110px;">Harga Karyawan</th>';
             $html .= '</tr>';
             $html .= '</thead>';
             $html .= '<tbody>';
@@ -479,8 +482,6 @@ class ProductController extends Controller
                         $html .= '<td class="text-right">0</td>';
                     }
                     $html .= '<td class="text-right font-bold">0</td>';
-                    $html .= '<td class="text-right">0</td>';
-                    $html .= '<td class="text-right">0</td>';
                     $html .= '<td class="text-right font-bold">0</td>';
                     $html .= '</tr>';
                     continue;
@@ -503,6 +504,7 @@ class ProductController extends Controller
                         $html .= '<td class="text-right" style="mso-number-format:\'#,##0\';">' . $u->cost_price . '</td>';
                     }
                     $html .= '<td class="text-right font-bold" style="mso-number-format:\'#,##0\';">' . $u->price_retail . '</td>';
+                    $html .= '<td class="text-right font-bold" style="mso-number-format:\'#,##0\';">' . ($u->price_employee ?: $u->price_retail) . '</td>';
                     $html .= '</tr>';
                 }
             }
