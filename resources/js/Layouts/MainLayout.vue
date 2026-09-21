@@ -41,7 +41,7 @@ const allNavigation = computed(() => [
         badge: Number(page.props.pendingGoodsReceiptsCount || 0)
     },
     { name: 'Master Produk', href: '/products', icon: Package, roles: ['admin', 'kasir', 'gudang'] },
-    { name: 'Stok Opname', href: '/stock-opnames', icon: ClipboardCheck, roles: ['admin', 'gudang'] },
+    { name: 'Stok Opname', href: '/stock-opnames', icon: ClipboardCheck, roles: ['admin', 'gudang', 'kasir'] },
     { name: 'Piutang Karyawan', href: '/receivables', icon: ClipboardList, roles: ['admin', 'kasir'] },
     { name: 'Buku Kas & Cashbox', href: '/cashboxes', icon: Wallet, roles: ['admin', 'kasir'] },
     { name: 'Laporan & Omset', href: '/reports', icon: BarChart3, roles: ['admin'] },
@@ -55,6 +55,12 @@ const navigation = computed(() => {
         if (item.href === '/products' && role === 'kasir') {
             const canAccess = settings.value?.kasir_can_access_products;
             if (canAccess === '0' || canAccess === false) {
+                return false;
+            }
+        }
+        if (item.href === '/stock-opnames' && role === 'kasir') {
+            const canAccessSo = settings.value?.kasir_can_access_stock_opname;
+            if (canAccessSo !== '1' && canAccessSo !== true && canAccessSo !== 1) {
                 return false;
             }
         }

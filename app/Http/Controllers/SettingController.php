@@ -31,6 +31,7 @@ class SettingController extends Controller
             'remove_logo' => 'nullable|boolean',
             'kasir_can_access_products' => 'nullable|boolean',
             'kasir_can_see_cost_price' => 'nullable|boolean',
+            'kasir_can_access_stock_opname' => 'nullable|boolean',
         ]);
 
         if ($request->boolean('remove_logo')) {
@@ -64,6 +65,7 @@ class SettingController extends Controller
 
         Setting::set('kasir_can_access_products', $request->boolean('kasir_can_access_products') ? '1' : '0');
         Setting::set('kasir_can_see_cost_price', $request->boolean('kasir_can_see_cost_price') ? '1' : '0');
+        Setting::set('kasir_can_access_stock_opname', $request->boolean('kasir_can_access_stock_opname') ? '1' : '0');
 
         return back()->with('success', 'Pengaturan toko, hak akses kasir, dan format cetak berhasil diperbarui.');
     }

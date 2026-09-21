@@ -6,7 +6,7 @@ import {
     Settings, Store, Phone, MapPin, Mail, FileText, 
     CreditCard, Printer, Save, CheckCircle2, ShieldAlert,
     Sparkles, Receipt, HelpCircle, Image, Upload, Trash2,
-    RefreshCw, Lock, EyeOff, ShieldCheck
+    RefreshCw, Lock, EyeOff, ShieldCheck, ClipboardCheck
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -32,6 +32,7 @@ const form = useForm({
     remove_logo: false,
     kasir_can_access_products: (props.settings.kasir_can_access_products === '1' || props.settings.kasir_can_access_products === 1) ? '1' : '0',
     kasir_can_see_cost_price: (props.settings.kasir_can_see_cost_price === '1' || props.settings.kasir_can_see_cost_price === 1) ? '1' : '0',
+    kasir_can_access_stock_opname: (props.settings.kasir_can_access_stock_opname === '1' || props.settings.kasir_can_access_stock_opname === 1) ? '1' : '0',
 });
 
 const printFormats = [
@@ -331,6 +332,35 @@ const submit = () => {
                                     >
                                         <span 
                                             :class="form.kasir_can_see_cost_price === '1' ? 'translate-x-5' : 'translate-x-0'"
+                                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Toggle 3: Akses Menu Stok Opname (Kondisional / Insidental) -->
+                            <div class="p-4 rounded-2xl border transition" :class="form.kasir_can_access_stock_opname === '1' ? 'border-amber-400 bg-amber-50/60 shadow-xs' : 'border-slate-200 bg-slate-50/50'">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <ClipboardCheck class="w-4 h-4" :class="form.kasir_can_access_stock_opname === '1' ? 'text-amber-600' : 'text-slate-600'" />
+                                            <span class="text-xs font-bold text-slate-900">Buka Menu Stok Opname untuk Kasir</span>
+                                            <span v-if="form.kasir_can_access_stock_opname === '1'" class="text-[9px] font-black uppercase tracking-wider bg-amber-600 text-white px-2 py-0.5 rounded-full shadow-xs">
+                                                Aktif Sementara
+                                            </span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 leading-relaxed">
+                                            Aktifkan saat jadwal audit SO rutin bulanan atau inisialisasi awal sistem. Saat aktif, akun Kasir dapat melihat menu Stok Opname, melakukan hitung fisik, dan menyimpan dokumen SO. Nonaktifkan kembali bila audit telah selesai.
+                                        </p>
+                                    </div>
+                                    <button 
+                                        type="button" 
+                                        @click="form.kasir_can_access_stock_opname = (form.kasir_can_access_stock_opname === '1' ? '0' : '1')"
+                                        :class="form.kasir_can_access_stock_opname === '1' ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-600'"
+                                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                    >
+                                        <span 
+                                            :class="form.kasir_can_access_stock_opname === '1' ? 'translate-x-5' : 'translate-x-0'"
                                             class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
                                         />
                                     </button>

@@ -87,10 +87,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('/units/{id}', [ProductController::class, 'destroyUnit'])->name('units.destroy');
     });
 
-    // Modul Stok Opname & Riwayat Dokumen Audit (Hanya Gudang & Admin - Kasir Dilarang)
-    Route::middleware('role:gudang')->group(function () {
+    // Modul Stok Opname & Riwayat Dokumen Audit (Gudang, Admin & Kasir jika diizinkan Admin)
+    Route::middleware('role:gudang,kasir')->group(function () {
         Route::get('/stock-opnames', [StockOpnameController::class, 'index'])->name('stock-opnames.index');
         Route::post('/stock-opnames', [StockOpnameController::class, 'store'])->name('stock-opnames.store');
+    });
+
+    // Penyesuaian / Edit Stok Fisik (Hanya Gudang & Admin - Kasir Tetap Dilarang)
+    Route::middleware('role:gudang')->group(function () {
         Route::post('/products/{id}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjustStock');
     });
 

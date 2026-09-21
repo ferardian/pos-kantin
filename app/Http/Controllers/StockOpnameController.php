@@ -56,7 +56,10 @@ class StockOpnameController extends Controller
     {
         $user = Auth::user();
         if ($user && $user->role === 'kasir') {
-            return back()->with('error', 'Akses ditolak: Akun Kasir tidak memiliki wewenang untuk menyimpan hasil Stok Opname.');
+            $canAccessSo = \App\Models\Setting::get('kasir_can_access_stock_opname', '0');
+            if ($canAccessSo !== '1' && $canAccessSo !== true && $canAccessSo !== 1) {
+                return back()->with('error', 'Akses ditolak: Izin Stok Opname untuk Kasir sedang dinonaktifkan oleh Admin.');
+            }
         }
 
         $validated = $request->validate([

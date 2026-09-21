@@ -35,6 +35,14 @@ class CheckRole
             }
         }
 
+        // Check dynamic restriction for kasir on stock-opnames routes (default ditutup kecuali diaktifkan Admin)
+        if ($user->role === 'kasir' && $request->is('stock-opnames*')) {
+            $canAccessSo = \App\Models\Setting::get('kasir_can_access_stock_opname', '0');
+            if ($canAccessSo !== '1' && $canAccessSo !== true && $canAccessSo !== 1) {
+                return redirect()->route('pos.index')->with('error', 'Akses ditolak: Menu Stok Opname sedang dinonaktifkan oleh Admin.');
+            }
+        }
+
         // Check if user's role is in the permitted roles
         if (in_array($user->role, $roles)) {
             return $next($request);
