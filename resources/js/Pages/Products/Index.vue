@@ -603,6 +603,38 @@ const formatRupiah = (val) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0);
 };
 
+const formatCurrencyNumber = (val) => {
+    if (val === null || val === undefined || val === '') return '';
+    const num = Math.round(Number(val) || 0);
+    if (num === 0) return '0';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+const handleCurrencyInput = (event, targetObj, key, allowEmpty = false) => {
+    const el = event.target;
+    const rawVal = el.value;
+    const digitsOnly = rawVal.replace(/[^\d]/g, '');
+
+    if (digitsOnly === '') {
+        targetObj[key] = allowEmpty ? null : 0;
+        el.value = '';
+        return;
+    }
+
+    const num = parseInt(digitsOnly, 10);
+    targetObj[key] = num;
+
+    const formatted = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const originalPos = el.selectionStart || 0;
+    const diff = formatted.length - rawVal.length;
+    el.value = formatted;
+
+    const newPos = Math.max(0, originalPos + diff);
+    try {
+        el.setSelectionRange(newPos, newPos);
+    } catch (e) {}
+};
+
 const filteredProducts = computed(() => {
     return props.products.filter(p => {
         const matchesCategory = opnameCategoryFilter.value === 'all' || p.category_id === Number(opnameCategoryFilter.value);
@@ -2436,15 +2468,45 @@ const submitNewUnit = () => {
                                 <div :class="['grid gap-2', canSeeCostPrice ? 'grid-cols-3' : 'grid-cols-2']">
                                     <div v-if="canSeeCostPrice">
                                         <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Modal (HPP)</label>
-                                        <input v-model.number="unit.cost_price" type="number" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-800 font-bold" />
+                                        <div class="relative">
+                                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 select-none">Rp</span>
+                                            <input 
+                                                type="text" 
+                                                inputmode="numeric" 
+                                                :value="formatCurrencyNumber(unit.cost_price)" 
+                                                @input="handleCurrencyInput($event, unit, 'cost_price')" 
+                                                placeholder="0" 
+                                                class="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs text-slate-800 font-bold focus:outline-none focus:border-amber-500" 
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Harga Umum</label>
-                                        <input v-model.number="unit.price_retail" type="number" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 font-black" />
+                                        <div class="relative">
+                                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 select-none">Rp</span>
+                                            <input 
+                                                type="text" 
+                                                inputmode="numeric" 
+                                                :value="formatCurrencyNumber(unit.price_retail)" 
+                                                @input="handleCurrencyInput($event, unit, 'price_retail')" 
+                                                placeholder="0" 
+                                                class="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs text-slate-900 font-black focus:outline-none focus:border-amber-500" 
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-amber-700 mb-0.5">Harga Karyawan</label>
-                                        <input v-model.number="unit.price_employee" type="number" placeholder="Sama dgn umum" class="w-full bg-amber-50/50 border border-amber-300 rounded-lg px-2 py-1.5 text-xs text-amber-950 font-black placeholder:text-amber-400 placeholder:font-normal" />
+                                        <div class="relative">
+                                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-500 select-none">Rp</span>
+                                            <input 
+                                                type="text" 
+                                                inputmode="numeric" 
+                                                :value="formatCurrencyNumber(unit.price_employee)" 
+                                                @input="handleCurrencyInput($event, unit, 'price_employee', true)" 
+                                                placeholder="Sama dgn umum" 
+                                                class="w-full bg-amber-50/50 border border-amber-300 rounded-lg pl-6 pr-2 py-1.5 text-xs text-amber-950 font-black placeholder:text-amber-400 placeholder:font-normal focus:outline-none focus:border-amber-500" 
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2803,15 +2865,45 @@ const submitNewUnit = () => {
                                 <div :class="['grid gap-2', canSeeCostPrice ? 'grid-cols-3' : 'grid-cols-2']">
                                     <div v-if="canSeeCostPrice">
                                         <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Modal (HPP)</label>
-                                        <input v-model.number="unit.cost_price" type="number" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-800 font-bold" />
+                                        <div class="relative">
+                                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 select-none">Rp</span>
+                                            <input 
+                                                type="text" 
+                                                inputmode="numeric" 
+                                                :value="formatCurrencyNumber(unit.cost_price)" 
+                                                @input="handleCurrencyInput($event, unit, 'cost_price')" 
+                                                placeholder="0" 
+                                                class="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs text-slate-800 font-bold focus:outline-none focus:border-amber-500" 
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Harga Umum</label>
-                                        <input v-model.number="unit.price_retail" type="number" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-900 font-black" />
+                                        <div class="relative">
+                                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 select-none">Rp</span>
+                                            <input 
+                                                type="text" 
+                                                inputmode="numeric" 
+                                                :value="formatCurrencyNumber(unit.price_retail)" 
+                                                @input="handleCurrencyInput($event, unit, 'price_retail')" 
+                                                placeholder="0" 
+                                                class="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs text-slate-900 font-black focus:outline-none focus:border-amber-500" 
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-amber-700 mb-0.5">Harga Karyawan</label>
-                                        <input v-model.number="unit.price_employee" type="number" placeholder="Sama dgn umum" class="w-full bg-amber-50/50 border border-amber-300 rounded-lg px-2 py-1.5 text-xs text-amber-950 font-black placeholder:text-amber-400 placeholder:font-normal" />
+                                        <div class="relative">
+                                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-500 select-none">Rp</span>
+                                            <input 
+                                                type="text" 
+                                                inputmode="numeric" 
+                                                :value="formatCurrencyNumber(unit.price_employee)" 
+                                                @input="handleCurrencyInput($event, unit, 'price_employee', true)" 
+                                                placeholder="Sama dgn umum" 
+                                                class="w-full bg-amber-50/50 border border-amber-300 rounded-lg pl-6 pr-2 py-1.5 text-xs text-amber-950 font-black placeholder:text-amber-400 placeholder:font-normal focus:outline-none focus:border-amber-500" 
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
