@@ -27,11 +27,11 @@ class CheckRole
             return $next($request);
         }
 
-        // Check dynamic restriction for kasir on products routes
+        // Check dynamic restriction for kasir on products routes (default diizinkan)
         if ($user->role === 'kasir' && ($request->is('products*') || $request->is('brands*') || $request->is('categories*') || $request->is('units*'))) {
-            $canAccess = \App\Models\Setting::get('kasir_can_access_products', '0');
-            if ($canAccess !== '1' && $canAccess !== true && $canAccess !== 1) {
-                return redirect()->route('pos.index')->with('error', 'Akses ditolak: Akun Kasir tidak memiliki izin untuk membuka Master Produk & Stok.');
+            $canAccess = \App\Models\Setting::get('kasir_can_access_products', '1');
+            if ($canAccess === '0' || $canAccess === false) {
+                return redirect()->route('pos.index')->with('error', 'Akses ditolak: Akun Kasir tidak memiliki izin untuk membuka Master Produk.');
             }
         }
 

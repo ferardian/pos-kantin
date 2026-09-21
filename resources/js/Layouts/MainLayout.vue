@@ -40,7 +40,7 @@ const allNavigation = computed(() => [
         roles: ['admin', 'kasir', 'gudang'],
         badge: Number(page.props.pendingGoodsReceiptsCount || 0)
     },
-    { name: 'Master Produk & Stok', href: '/products', icon: Package, roles: ['admin', 'kasir', 'gudang'] },
+    { name: user.value?.role === 'kasir' ? 'Master Produk' : 'Master Produk & Stok', href: '/products', icon: Package, roles: ['admin', 'kasir', 'gudang'] },
     { name: 'Piutang Karyawan', href: '/receivables', icon: ClipboardList, roles: ['admin', 'kasir'] },
     { name: 'Buku Kas & Cashbox', href: '/cashboxes', icon: Wallet, roles: ['admin', 'kasir'] },
     { name: 'Laporan & Omset', href: '/reports', icon: BarChart3, roles: ['admin'] },
@@ -53,7 +53,7 @@ const navigation = computed(() => {
     return allNavigation.value.filter(item => {
         if (item.href === '/products' && role === 'kasir') {
             const canAccess = settings.value?.kasir_can_access_products;
-            if (canAccess !== '1' && canAccess !== true && canAccess !== 1) {
+            if (canAccess === '0' || canAccess === false) {
                 return false;
             }
         }

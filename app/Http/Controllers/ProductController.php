@@ -91,6 +91,10 @@ class ProductController extends Controller
                 }
             }
 
+            $user = Auth::user();
+            // Kasir tidak boleh mengisi stok fisik awal (stok awal selalu 0, harus lewat penerimaan barang)
+            $stockPhysical = ($user && $user->role === 'kasir') ? 0 : ($validated['stock_physical'] ?? 0);
+
             $product = Product::create([
                 'sku' => $sku,
                 'barcode' => $barcode,
@@ -98,7 +102,7 @@ class ProductController extends Controller
                 'category_id' => $validated['category_id'] ?? null,
                 'brand_id' => $validated['brand_id'] ?? null,
                 'min_stock' => $validated['min_stock'] ?? 0,
-                'stock_physical' => $validated['stock_physical'] ?? 0,
+                'stock_physical' => $stockPhysical,
                 'stock_booked' => 0,
                 'description' => $validated['description'] ?? null,
             ]);
@@ -352,6 +356,11 @@ class ProductController extends Controller
 
     public function adjustStock(Request $request, $id)
     {
+        $user = Auth::user();
+        if ($user && $user->role === 'kasir') {
+            return back()->with('error', 'Akses ditolak: Akun Kasir tidak memiliki izin untuk mengubah atau menyesuaikan stok barang.');
+        }
+
         $validated = $request->validate([
             'type' => 'required|in:in,out,adjustment',
             'qty' => 'required|numeric|min:0',

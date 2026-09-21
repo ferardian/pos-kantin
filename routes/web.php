@@ -67,7 +67,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/suppliers', [GoodsReceiptController::class, 'storeSupplier'])->name('suppliers.store');
     });
 
-    // Master Produk, Kategori, Merek & Stok
+    // Master Produk, Kategori, Merek & Stok (Bisa diakses Kasir, Gudang, Admin)
     Route::middleware('role:gudang,kasir')->group(function () {
         Route::get('/products/export-excel', [ProductController::class, 'exportExcel'])->name('products.exportExcel');
         Route::post('/products/generate-all-barcodes', [ProductController::class, 'generateAllBarcodes'])->name('products.generateAllBarcodes');
@@ -75,7 +75,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/products', [ProductController::class, 'store'])->name('products.store');
         Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
         Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
-        Route::post('/products/{id}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjustStock');
         Route::post('/brands', [ProductController::class, 'storeBrand'])->name('brands.store');
         Route::put('/brands/{id}', [ProductController::class, 'updateBrand'])->name('brands.update');
         Route::delete('/brands/{id}', [ProductController::class, 'destroyBrand'])->name('brands.destroy');
@@ -85,6 +84,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/units', [ProductController::class, 'storeUnit'])->name('units.store');
         Route::put('/units/{id}', [ProductController::class, 'updateUnit'])->name('units.update');
         Route::delete('/units/{id}', [ProductController::class, 'destroyUnit'])->name('units.destroy');
+    });
+
+    // Penyesuaian / Edit Stok Fisik (Hanya Gudang & Admin - Kasir Dilarang)
+    Route::middleware('role:gudang')->group(function () {
+        Route::post('/products/{id}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjustStock');
     });
 
     // Piutang Karyawan (Data Pegawai tersinkronisasi dari RSIA API)

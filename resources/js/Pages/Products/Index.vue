@@ -8,7 +8,7 @@ import {
     Check, AlertTriangle, ArrowUpDown, X, Sparkles, PlusCircle, PackagePlus,
     ChevronDown, CheckCircle2, QrCode, Barcode, Printer, Copy,
     ClipboardCheck, History, ArrowUpRight, ArrowDownRight, RefreshCw, AlertCircle, BookmarkCheck,
-    Pencil, Shapes, SlidersHorizontal, Ruler, Boxes, FileSpreadsheet, FileText, Download
+    Pencil, Shapes, SlidersHorizontal, Ruler, Boxes, FileSpreadsheet, FileText, Download, Lock
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -517,6 +517,9 @@ const printPriceList = () => {
 
 const openAddProductModal = () => {
     addProductForm.reset();
+    if (props.user?.role === 'kasir') {
+        addProductForm.stock_physical = 0;
+    }
     autoGenerateSku();
     autoGenerateBarcode();
     isAddModalOpen.value = true;
@@ -574,6 +577,9 @@ const removeUnitRow = (index) => {
 };
 
 const submitAddProduct = () => {
+    if (props.user?.role === 'kasir') {
+        addProductForm.stock_physical = 0;
+    }
     addProductForm.post('/products', {
         onSuccess: () => {
             isAddModalOpen.value = false;
@@ -1323,7 +1329,7 @@ const submitNewUnit = () => {
                         <span>Riwayat Log Opname</span>
                     </button>
                     <button 
-                        v-if="user.role === 'admin' || user.role === 'gudang'"
+                        v-if="user.role === 'admin' || user.role === 'gudang' || user.role === 'kasir'"
                         @click="activeTab = 'categories_brands'"
                         :class="activeTab === 'categories_brands' ? 'bg-slate-900 text-white font-black' : 'text-slate-600 hover:text-slate-900'"
                         class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
@@ -1386,7 +1392,7 @@ const submitNewUnit = () => {
                         </button>
 
                         <button 
-                            v-if="user.role === 'admin' || user.role === 'gudang'"
+                            v-if="user.role === 'admin' || user.role === 'gudang' || user.role === 'kasir'"
                             @click="openAddProductModal"
                             class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition shadow-xs shrink-0 cursor-pointer w-full sm:w-auto justify-center"
                         >
@@ -1468,7 +1474,7 @@ const submitNewUnit = () => {
                                     <td class="py-3.5 px-4 text-center">
                                         <div class="flex items-center justify-center gap-1.5">
                                             <button 
-                                                v-if="user.role === 'admin' || user.role === 'gudang'"
+                                                v-if="user.role === 'admin' || user.role === 'gudang' || user.role === 'kasir'"
                                                 @click="openEditModal(product)"
                                                 class="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold text-[11px] flex items-center gap-1 transition cursor-pointer active:scale-95"
                                                 title="Edit Data Produk & Harga"
@@ -2314,8 +2320,16 @@ const submitNewUnit = () => {
                         <div>
                             <div class="h-5 flex items-center justify-between mb-1.5">
                                 <label class="block text-slate-700 font-bold">Stok Fisik Awal</label>
+                                <span v-if="user.role === 'kasir'" class="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                                    <Lock class="w-2.5 h-2.5" /> Terkunci
+                                </span>
+                            </div>
+                            <div v-if="user.role === 'kasir'" class="w-full h-9 bg-slate-100 border border-slate-200 rounded-xl px-3 flex items-center justify-between text-xs text-slate-500 font-semibold cursor-not-allowed" title="Stok fisik awal terkunci untuk akun kasir. Penambahan stok harus melalui menu Penerimaan Barang.">
+                                <span>0 (Terkunci)</span>
+                                <span class="text-[9px] text-slate-400 font-normal">Via Penerimaan Barang</span>
                             </div>
                             <input 
+                                v-else
                                 v-model.number="addProductForm.stock_physical" 
                                 type="number" 
                                 placeholder="0" 
