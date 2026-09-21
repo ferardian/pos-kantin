@@ -1300,7 +1300,7 @@ const submitNewUnit = () => {
                     </div>
                 </div>
 
-                <!-- Tabs Selector -->
+                <!-- Tabs Selector (Katalog & Master Kategori) -->
                 <div class="flex flex-wrap items-center gap-1.5 p-1 bg-white border border-slate-200 rounded-2xl shadow-xs">
                     <button 
                         @click="activeTab = 'catalog'"
@@ -1311,25 +1311,6 @@ const submitNewUnit = () => {
                         <span>Katalog Produk ({{ products.length }})</span>
                     </button>
                     <button 
-                        v-if="user.role === 'admin' || user.role === 'gudang'"
-                        @click="activeTab = 'opname'"
-                        :class="activeTab === 'opname' ? 'bg-slate-900 text-white font-black' : 'text-slate-600 hover:text-slate-900'"
-                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                        <ClipboardCheck class="w-3.5 h-3.5 text-amber-400" />
-                        <span>Audit Stok Opname</span>
-                    </button>
-                    <button 
-                        v-if="user.role === 'admin' || user.role === 'gudang'"
-                        @click="activeTab = 'logs'"
-                        :class="activeTab === 'logs' ? 'bg-slate-900 text-white font-black' : 'text-slate-600 hover:text-slate-900'"
-                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                        <History class="w-3.5 h-3.5" />
-                        <span>Riwayat Log Opname</span>
-                    </button>
-                    <button 
-                        v-if="user.role === 'admin' || user.role === 'gudang' || user.role === 'kasir'"
                         @click="activeTab = 'categories_brands'"
                         :class="activeTab === 'categories_brands' ? 'bg-slate-900 text-white font-black' : 'text-slate-600 hover:text-slate-900'"
                         class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
@@ -1337,6 +1318,14 @@ const submitNewUnit = () => {
                         <Tag class="w-3.5 h-3.5 text-amber-400" />
                         <span>Kategori, Merk & Satuan</span>
                     </button>
+                    <Link
+                        v-if="user.role === 'admin' || user.role === 'gudang'"
+                        href="/stock-opnames"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 transition flex items-center gap-1.5 cursor-pointer ml-auto border border-amber-200"
+                    >
+                        <ClipboardCheck class="w-3.5 h-3.5 text-amber-700" />
+                        <span>Buka Menu Stok Opname &rarr;</span>
+                    </Link>
                 </div>
             </div>
 
@@ -1500,191 +1489,6 @@ const submitNewUnit = () => {
                                                 <span>Stok (Admin)</span>
                                             </button>
                                         </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 2: AUDIT STOK OPNAME KERJA TOKO -->
-            <div v-if="activeTab === 'opname'" class="space-y-4">
-                <div class="bg-amber-50 border border-amber-200 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div class="flex items-start gap-3">
-                        <div class="w-9 h-9 rounded-2xl bg-amber-200 text-amber-800 flex items-center justify-center font-black shrink-0">
-                            <ClipboardCheck class="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-black text-amber-950">Lembar Kerja Audit Stok Opname (Hitung Fisik Aktual)</h3>
-                            <p class="text-xs text-amber-800 mt-0.5">
-                                Hitung seluruh fisik barang di toko/gudang. Stok Sistem di bawah ini adalah <strong>Stok Fisik Aktual Total</strong>.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-600">Filter Kategori:</span>
-                        <select v-model="opnameCategoryFilter" class="bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-bold">
-                            <option value="all">Semua Kategori</option>
-                            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
-                    <div class="max-h-[calc(100vh-270px)] overflow-y-auto overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead class="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 shadow-xs">
-                                <tr class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                                    <th class="py-3.5 px-3.5 w-12 text-center bg-slate-50">No</th>
-                                    <th class="py-3.5 px-4 bg-slate-50">Nama Produk / Menu</th>
-                                    <th class="py-3.5 px-4 text-center bg-slate-50">Stok Fisik di Sistem</th>
-                                    <th class="py-3.5 px-4 text-center bg-slate-50">Hitungan Fisik Nyata</th>
-                                    <th class="py-3.5 px-4 text-center bg-slate-50">Selisih (+/-)</th>
-                                    <th class="py-3.5 px-4 bg-slate-50">Alasan / Catatan Penyesuaian</th>
-                                    <th class="py-3.5 px-4 text-center bg-slate-50">Simpan Opname</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr v-for="(product, index) in filteredProducts" :key="product.id" class="hover:bg-slate-50 transition">
-                                    <td class="py-3.5 px-3.5 text-center text-slate-400 font-mono text-[11px] font-bold">
-                                        {{ index + 1 }}
-                                    </td>
-                                    <td class="py-3.5 px-4">
-                                        <div class="font-bold text-slate-900 text-xs">{{ product.name }}</div>
-                                        <div class="text-[10px] text-slate-400 font-mono">{{ product.sku }} &bull; {{ product.brand?.name }}</div>
-                                    </td>
-
-                                    <td class="py-3.5 px-4 text-center">
-                                        <div class="inline-flex flex-col items-center">
-                                            <span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-800 font-black text-xs">
-                                                {{ product.stock_physical }} {{ product.units[0]?.unit_name }}
-                                            </span>
-                                            <span v-if="product.stock_booked > 0" class="text-[9px] text-amber-700 font-bold mt-0.5">
-                                                (Di-booking SO: {{ product.stock_booked }})
-                                            </span>
-                                        </div>
-                                    </td>
-
-                                    <td class="py-3.5 px-4 text-center">
-                                        <div class="flex items-center justify-center gap-1.5">
-                                            <input 
-                                                v-if="opnameInputs[product.id]"
-                                                v-model.number="opnameInputs[product.id].physical"
-                                                type="number"
-                                                step="0.1"
-                                                min="0"
-                                                class="w-20 bg-slate-50 border border-slate-300 focus:border-amber-500 rounded-xl px-2.5 py-1.5 text-center font-black text-xs text-slate-900"
-                                            />
-                                            <span class="text-[11px] text-slate-500 font-semibold">{{ product.units[0]?.unit_name }}</span>
-                                        </div>
-                                    </td>
-
-                                    <td class="py-3.5 px-4 text-center">
-                                        <template v-if="calculateDiff(product) === 0">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">
-                                                0 (Cocok)
-                                            </span>
-                                        </template>
-                                        <template v-else-if="calculateDiff(product) > 0">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-300">
-                                                +{{ calculateDiff(product) }} (Lebih)
-                                            </span>
-                                        </template>
-                                        <template v-else>
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-800 border border-rose-300">
-                                                {{ calculateDiff(product) }} (Kurang)
-                                            </span>
-                                        </template>
-                                    </td>
-
-                                    <td class="py-3.5 px-4">
-                                        <input 
-                                            v-if="opnameInputs[product.id]"
-                                            v-model="opnameInputs[product.id].reason"
-                                            type="text"
-                                            placeholder="Alasan selisih..."
-                                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs text-slate-800"
-                                        />
-                                    </td>
-
-                                    <td class="py-3.5 px-4 text-center">
-                                        <button 
-                                            @click="submitSingleOpname(product)"
-                                            :disabled="opnameInputs[product.id]?.processing || calculateDiff(product) === 0"
-                                            :class="calculateDiff(product) !== 0 ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-400 cursor-not-allowed'"
-                                            class="px-3 py-1.5 rounded-xl font-bold text-[11px] transition flex items-center gap-1 mx-auto cursor-pointer"
-                                        >
-                                            <Check class="w-3.5 h-3.5" />
-                                            <span>Sesuaikan</span>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 3: RIWAYAT & LOG AUDIT STOK OPNAME -->
-            <div v-if="activeTab === 'logs'" class="space-y-4">
-                <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h3 class="text-sm font-black text-slate-900 mb-0.5">Riwayat Log Penyesuaian & Opname Stok</h3>
-                            <p class="text-xs text-slate-500">Catatan lengkap audit stok opname, mutasi barang masuk/keluar, dan nama staf penanggung jawab.</p>
-                        </div>
-                        <span class="px-3 py-1 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700">
-                            Total: {{ stockLogs.length }} Aktivitas Log
-                        </span>
-                    </div>
-
-                    <div class="max-h-[calc(100vh-320px)] overflow-y-auto overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead class="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 shadow-xs">
-                                <tr class="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                                    <th class="py-3 px-3 w-12 text-center bg-slate-50">No</th>
-                                    <th class="py-3 px-3 bg-slate-50">Tanggal & Waktu</th>
-                                    <th class="py-3 px-3 bg-slate-50">Nama Produk</th>
-                                    <th class="py-3 px-3 bg-slate-50">Petugas Audit</th>
-                                    <th class="py-3 px-3 text-center bg-slate-50">Tipe Mutasi</th>
-                                    <th class="py-3 px-3 text-center bg-slate-50">Selisih Qty</th>
-                                    <th class="py-3 px-3 bg-slate-50">Alasan / Catatan</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr v-for="(log, index) in stockLogs" :key="log.id" class="hover:bg-slate-50">
-                                    <td class="py-3 px-3 text-center text-slate-400 font-mono text-[11px] font-bold">
-                                        {{ index + 1 }}
-                                    </td>
-                                    <td class="py-3 px-3 text-slate-500 font-mono text-[11px]">
-                                        {{ new Date(log.created_at).toLocaleString('id-ID') }}
-                                    </td>
-                                    <td class="py-3 px-3 font-bold text-slate-900">
-                                        {{ log.product?.name }}
-                                    </td>
-                                    <td class="py-3 px-3 text-slate-700 font-semibold">
-                                        {{ log.user?.name }} ({{ log.user?.role }})
-                                    </td>
-                                    <td class="py-3 px-3 text-center">
-                                        <span v-if="log.type === 'adjustment'" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
-                                            Stok Opname
-                                        </span>
-                                        <span v-else-if="log.type === 'in'" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                            Barang Masuk (+)
-                                        </span>
-                                        <span v-else class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
-                                            Barang Keluar (-)
-                                        </span>
-                                    </td>
-                                    <td class="py-3 px-3 text-center font-black text-xs">
-                                        <span :class="log.qty_change >= 0 ? 'text-emerald-700' : 'text-rose-600'">
-                                            {{ log.qty_change >= 0 ? '+' : '' }}{{ log.qty_change }}
-                                        </span>
-                                    </td>
-                                    <td class="py-3 px-3 text-slate-600 italic">
-                                        "{{ log.reason }}"
                                     </td>
                                 </tr>
                             </tbody>

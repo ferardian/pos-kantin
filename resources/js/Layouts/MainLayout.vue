@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { 
-    Truck, Store, ShoppingCart, ClipboardList, Package, Users, BarChart3, 
+    Truck, Store, ShoppingCart, ClipboardList, ClipboardCheck, Package, Users, BarChart3, 
     LogOut, CheckCircle, AlertTriangle, Shield,
     RotateCcw, Settings, Menu, X, ArrowLeftRight,
     LayoutDashboard, Wallet, UserCog,
@@ -40,7 +40,8 @@ const allNavigation = computed(() => [
         roles: ['admin', 'kasir', 'gudang'],
         badge: Number(page.props.pendingGoodsReceiptsCount || 0)
     },
-    { name: user.value?.role === 'kasir' ? 'Master Produk' : 'Master Produk & Stok', href: '/products', icon: Package, roles: ['admin', 'kasir', 'gudang'] },
+    { name: 'Master Produk', href: '/products', icon: Package, roles: ['admin', 'kasir', 'gudang'] },
+    { name: 'Stok Opname', href: '/stock-opnames', icon: ClipboardCheck, roles: ['admin', 'gudang'] },
     { name: 'Piutang Karyawan', href: '/receivables', icon: ClipboardList, roles: ['admin', 'kasir'] },
     { name: 'Buku Kas & Cashbox', href: '/cashboxes', icon: Wallet, roles: ['admin', 'kasir'] },
     { name: 'Laporan & Omset', href: '/reports', icon: BarChart3, roles: ['admin'] },

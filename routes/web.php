@@ -11,6 +11,7 @@ use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -86,8 +87,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/units/{id}', [ProductController::class, 'destroyUnit'])->name('units.destroy');
     });
 
-    // Penyesuaian / Edit Stok Fisik (Hanya Gudang & Admin - Kasir Dilarang)
+    // Modul Stok Opname & Riwayat Dokumen Audit (Hanya Gudang & Admin - Kasir Dilarang)
     Route::middleware('role:gudang')->group(function () {
+        Route::get('/stock-opnames', [StockOpnameController::class, 'index'])->name('stock-opnames.index');
+        Route::post('/stock-opnames', [StockOpnameController::class, 'store'])->name('stock-opnames.store');
         Route::post('/products/{id}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjustStock');
     });
 
