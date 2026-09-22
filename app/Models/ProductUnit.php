@@ -20,16 +20,11 @@ class ProductUnit extends Model
         'is_base_unit'     => 'boolean',
     ];
 
-    protected $appends = ['selling_price', 'employee_price'];
+    protected $appends = ['selling_price'];
 
     public function getSellingPriceAttribute()
     {
         return $this->price_retail;
-    }
-
-    public function getEmployeePriceAttribute()
-    {
-        return ($this->price_employee !== null && $this->price_employee > 0) ? (float)$this->price_employee : (float)$this->price_retail;
     }
 
     public function product(): BelongsTo

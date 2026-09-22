@@ -74,11 +74,10 @@ const focusSearchInput = (selectAll = false, force = false) => {
 const selectedCategory = ref('all');
 const selectedCustomer = ref(
     (props.customers && props.customers.length > 0)
-        ? (props.customers.find(c => c.tier === 'eceran') || props.customers[0])
-        : { id: null, name: 'Pelanggan Umum', tier: 'eceran' }
+        ? (props.customers.find(c => c.tier === 'umum') || props.customers[0])
+        : { id: null, name: 'Pelanggan Umum', tier: 'umum' }
 );
-const activePriceTier = ref(selectedCustomer.value?.tier || 'eceran'); // Can be overridden
-const priceType = ref('umum'); // 'umum' | 'karyawan'
+const activePriceTier = ref('umum');
 const cart = ref([]);
 const isMobileCartOpen = ref(false);
 const isCheckoutOpen = ref(false);
@@ -122,10 +121,8 @@ const printFormats = [
 ];
 
 const priceTiers = [
-    { id: 'eceran', label: 'Retail' },
-    { id: 'tukang', label: 'Bronze' },
-    { id: 'kontraktor', label: 'Gold' },
-    { id: 'grosir', label: 'Diamond' }
+    { id: 'umum', label: 'Umum' },
+    { id: 'karyawan', label: 'Karyawan' }
 ];
 
 // Payment Form
@@ -184,55 +181,34 @@ const filteredProducts = computed(() => {
     });
 });
 
-// Dual pricing calculation (Umum vs Karyawan)
-const getUnitPrice = (unit) => {
+// Price tier calculation (Umum vs Karyawan)
+// Jika tier karyawan dan belum ada harga karyawan, dibuat 0 (tidak dianggap sama sprti harga umum)
+const getUnitPrice = (unit, tier = activePriceTier.value) => {
     if (!unit) return 0;
-    if (priceType.value === 'karyawan') {
-        const empPrice = Number(unit.price_employee);
-        if (empPrice > 0) return empPrice;
-    }
+    if (tier === 'karyawan') return Number(unit.price_employee || 0);
     return Number(unit.price_retail || 0);
-};
-
-const setPriceType = (type) => {
-    priceType.value = type;
-    // Recalculate existing items in cart
-    cart.value.forEach(item => {
-        item.unit_price = getUnitPrice(item.unit);
-        item.subtotal = item.qty * item.unit_price;
-    });
-    focusSearchInput();
-};
-
-const togglePriceType = () => {
-    setPriceType(priceType.value === 'umum' ? 'karyawan' : 'umum');
 };
 
 const getTierLabel = (tier) => {
     switch (tier) {
-        case 'eceran': return 'Retail';
-        case 'tukang': return 'Bronze';
-        case 'kontraktor': return 'Gold';
-        case 'grosir': return 'Diamond';
-        default: return tier;
+        case 'karyawan': return 'Karyawan';
+        default: return 'Umum';
     }
 };
 
 const getTierBadgeClass = (tier) => {
     switch (tier) {
-        case 'eceran': return 'bg-slate-100 text-slate-700 border-slate-300';
-        case 'tukang': return 'bg-amber-800 text-white border-amber-900 shadow-2xs font-black';
-        case 'kontraktor': return 'bg-amber-300 text-amber-950 border-amber-500 shadow-2xs font-black';
-        case 'grosir': return 'bg-sky-600 text-white border-sky-700 shadow-2xs font-black';
+        case 'karyawan': return 'bg-amber-500 text-slate-950 border-amber-600 shadow-2xs font-black';
         default: return 'bg-slate-100 text-slate-700 border-slate-300';
     }
 };
 
 // Add to Cart
-const addToCart = (product, specificUnit = null) => {
+const addToCart = (product, specificUnit = null, specificTier = null) => {
     const unit = specificUnit || product.units.find(u => u.is_base_unit) || product.units[0];
-    const price = getUnitPrice(unit);
-    const existingIndex = cart.value.findIndex(item => item.product.id === product.id && item.unit.id === unit.id);
+    const tier = specificTier || activePriceTier.value || 'umum';
+    const price = getUnitPrice(unit, tier);
+    const existingIndex = cart.value.findIndex(item => item.product.id === product.id && item.unit.id === unit.id && item.tier === tier);
 
     if (existingIndex > -1) {
         cart.value[existingIndex].qty += 1;
@@ -241,6 +217,7 @@ const addToCart = (product, specificUnit = null) => {
         cart.value.push({
             product,
             unit,
+            tier,
             qty: 1,
             unit_price: price,
             subtotal: price,
@@ -250,10 +227,15 @@ const addToCart = (product, specificUnit = null) => {
     focusSearchInput();
 };
 
-const getItemQtyInCart = (productId, unitId = null) => {
-    if (unitId) {
-        const item = cart.value.find(i => i.product.id === productId && i.unit.id === unitId);
+const getItemQtyInCart = (productId, unitId = null, tier = null) => {
+    if (unitId && tier) {
+        const item = cart.value.find(i => i.product.id === productId && i.unit.id === unitId && i.tier === tier);
         return item ? item.qty : 0;
+    }
+    if (unitId) {
+        return cart.value
+            .filter(i => i.product.id === productId && i.unit.id === unitId)
+            .reduce((sum, i) => sum + i.qty, 0);
     }
     return cart.value
         .filter(i => i.product.id === productId)
@@ -261,7 +243,8 @@ const getItemQtyInCart = (productId, unitId = null) => {
 };
 
 const updateUnitQtyInCatalog = (product, unit, delta) => {
-    const existingIndex = cart.value.findIndex(item => item.product.id === product.id && item.unit.id === unit.id);
+    const tier = activePriceTier.value;
+    const existingIndex = cart.value.findIndex(item => item.product.id === product.id && item.unit.id === unit.id && item.tier === tier);
     if (existingIndex > -1) {
         const newQty = cart.value[existingIndex].qty + delta;
         if (newQty <= 0) {
@@ -271,7 +254,7 @@ const updateUnitQtyInCatalog = (product, unit, delta) => {
             cart.value[existingIndex].subtotal = cart.value[existingIndex].qty * cart.value[existingIndex].unit_price;
         }
     } else if (delta > 0) {
-        addToCart(product, unit);
+        addToCart(product, unit, tier);
     }
     focusSearchInput();
 };
@@ -283,20 +266,30 @@ const changeItemUnit = (itemIndex, newUnitId) => {
     const newUnit = item.product.units.find(u => u.id === Number(newUnitId));
     if (newUnit) {
         item.unit = newUnit;
-        item.unit_price = getUnitPrice(newUnit);
+        item.unit_price = getUnitPrice(newUnit, item.tier || activePriceTier.value);
         item.subtotal = item.qty * item.unit_price;
     }
 };
 
+// Change strata / price tier for a specific item in cart
+const changeCartItemTier = (itemIndex, newTier) => {
+    const item = cart.value[itemIndex];
+    if (!item) return;
+    item.tier = newTier;
+    item.unit_price = getUnitPrice(item.unit, newTier);
+    item.subtotal = item.qty * item.unit_price;
+};
 
-
-// Change active price tier (sets active tier for catalog & future items without altering existing locked items in cart)
+// Change active price tier
 const setPriceTier = (tier) => {
     activePriceTier.value = tier;
     focusSearchInput();
 };
 
-// Customer Selection
+const togglePriceTier = () => {
+    setPriceTier(activePriceTier.value === 'umum' ? 'karyawan' : 'umum');
+};
+
 const selectCustomer = (cust) => {
     selectedCustomer.value = cust;
     checkoutForm.customer_id = cust.id;
@@ -461,9 +454,12 @@ const openCheckout = () => {
         product_unit_id: i.unit.id,
         qty: i.qty,
         unit_price: i.unit_price,
+        tier: i.tier,
         subtotal: i.subtotal,
     }));
-    checkoutForm.price_type = priceType.value;
+    const hasEmployeeItem = cart.value.some(i => i.tier === 'karyawan');
+    const isKaryawan = activePriceTier.value === 'karyawan' || hasEmployeeItem || !!selectedEmployeeId.value;
+    checkoutForm.price_type = isKaryawan ? 'karyawan' : 'umum';
     checkoutForm.employee_id = selectedEmployeeId.value || null;
     checkoutForm.total_gross = subtotalGross.value;
     checkoutForm.total_net = totalNet.value;
@@ -604,7 +600,7 @@ const submitCheckout = () => {
                 },
                 customer_name: finalCustomerName,
                 tier_label: finalTierLabel,
-                price_type: priceType.value,
+                price_type: checkoutForm.price_type,
                 items: [...cart.value],
                 total_gross: subtotalGross.value,
                 discount: checkoutForm.discount,
@@ -1312,7 +1308,7 @@ const handleKeyDown = (e) => {
         return;
     } else if (e.key === 'F4') {
         e.preventDefault();
-        togglePriceType();
+        togglePriceTier();
         return;
     } else if (e.key === 'F9') {
         e.preventDefault();
@@ -1521,26 +1517,23 @@ onUnmounted(() => {
                             <span>{{ isTouchMode ? 'Mode Tab' : 'Mode PC' }}</span>
                         </button>
 
-                        <!-- Dual Price Mode Toggle (Umum vs Karyawan F4) -->
-                        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+                        <!-- Price Tier Selector Pill in Header (Umum & Karyawan) -->
+                        <div class="flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl shrink-0">
+                            <span class="text-[10px] font-bold text-slate-400 px-1.5">Tipe:</span>
                             <button 
+                                v-for="t in priceTiers" 
+                                :key="t.id"
                                 type="button"
-                                @click="setPriceType('umum')"
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer"
-                                :class="priceType === 'umum' ? 'bg-white text-slate-950 shadow-xs ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900'"
-                                title="Gunakan Harga Umum"
+                                @click="setPriceTier(t.id)"
+                                :class="[
+                                    activePriceTier === t.id 
+                                        ? (t.id === 'karyawan' ? 'bg-amber-500 text-slate-950 font-black shadow-xs ring-1 ring-amber-400' : 'bg-slate-900 text-white font-black shadow-xs') 
+                                        : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200',
+                                    'px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer active:scale-95 flex items-center gap-1'
+                                ]"
                             >
-                                <span>🛍️ Umum</span>
-                            </button>
-                            <button 
-                                type="button"
-                                @click="setPriceType('karyawan')"
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer"
-                                :class="priceType === 'karyawan' ? 'bg-amber-500 text-slate-950 shadow-xs ring-1 ring-amber-400' : 'text-slate-600 hover:text-slate-900'"
-                                title="Gunakan Harga Karyawan RSIA (Shortcut: Tekan F4)"
-                            >
-                                <span>👨‍💼 Karyawan</span>
-                                <span class="text-[10px] px-1 py-0.2 rounded font-mono font-bold" :class="priceType === 'karyawan' ? 'bg-amber-600/30 text-slate-950' : 'bg-slate-200 text-slate-500'">F4</span>
+                                <span>{{ t.id === 'karyawan' ? '👨‍💼 ' : '🛍️ ' }}{{ t.label }}</span>
+                                <span v-if="t.id === 'karyawan'" class="text-[9px] px-1 py-0.2 rounded font-mono font-bold ml-0.5" :class="activePriceTier === 'karyawan' ? 'bg-amber-600/30 text-slate-950' : 'bg-slate-200 text-slate-500'">F4</span>
                             </button>
                         </div>
                     </div>
@@ -1646,12 +1639,12 @@ onUnmounted(() => {
                             </p>
                         </div>
 
-                        <!-- Multi-Unit Price Chips -->
+                        <!-- Multi-Unit Price Chips with Active Tier Pricing -->
                         <div class="space-y-2 pt-2.5 border-t border-slate-100">
                             <template v-for="unit in product.units" :key="unit.id">
-                                <!-- CASE A: Unit is in Cart (Show Stepper) -->
+                                <!-- CASE A: Unit is in Cart under current activePriceTier (Show Stepper) -->
                                 <div 
-                                    v-if="getItemQtyInCart(product.id, unit.id) > 0"
+                                    v-if="getItemQtyInCart(product.id, unit.id, activePriceTier) > 0"
                                     :class="[
                                         isFewSearchResults ? 'p-3 rounded-2xl min-h-[56px]' : 'p-2 rounded-xl min-h-[44px]',
                                         'bg-amber-50/90 border-2 border-amber-500 flex items-center justify-between shadow-xs transition-all'
@@ -1659,13 +1652,15 @@ onUnmounted(() => {
                                     @click.stop
                                 >
                                     <div class="min-w-0 pr-2">
-                                        <p :class="isFewSearchResults ? 'text-xs sm:text-sm' : 'text-xs'" class="font-black text-amber-950 truncate">{{ unit.unit_name }}</p>
                                         <div class="flex items-center gap-1">
-                                            <span v-if="priceType === 'karyawan' && unit.price_employee && Number(unit.price_employee) < Number(unit.price_retail)" class="line-through text-amber-700/70 text-[10px] font-normal">
-                                                {{ formatRupiah(unit.price_retail) }}
+                                            <p :class="isFewSearchResults ? 'text-xs sm:text-sm' : 'text-xs'" class="font-black text-amber-950 truncate">{{ unit.unit_name }}</p>
+                                            <span class="text-[8px] font-black px-1 rounded uppercase" :class="activePriceTier === 'karyawan' ? 'bg-amber-500 text-slate-950' : 'bg-slate-200 text-slate-700'">
+                                                {{ getTierLabel(activePriceTier) }}
                                             </span>
-                                            <p :class="isFewSearchResults ? 'text-xs sm:text-sm font-black' : 'text-[11px] font-extrabold'" class="text-amber-900">{{ formatRupiah(getUnitPrice(unit)) }}</p>
                                         </div>
+                                        <p :class="isFewSearchResults ? 'text-xs sm:text-sm font-black' : 'text-[11px] font-extrabold'" class="text-amber-900">
+                                            {{ formatRupiah(getUnitPrice(unit, activePriceTier)) }}
+                                        </p>
                                     </div>
                                     <div class="flex items-center gap-1.5 bg-white border border-amber-300 rounded-xl p-1 shadow-2xs shrink-0">
                                         <button 
@@ -1677,7 +1672,7 @@ onUnmounted(() => {
                                             <Minus :class="isFewSearchResults ? 'w-4 h-4' : 'w-3.5 h-3.5'" />
                                         </button>
                                         <span :class="isFewSearchResults ? 'w-8 text-sm sm:text-base' : 'w-6 text-xs'" class="text-center font-black text-slate-900">
-                                            {{ getItemQtyInCart(product.id, unit.id) }}
+                                            {{ getItemQtyInCart(product.id, unit.id, activePriceTier) }}
                                         </span>
                                         <button 
                                             @click.stop="updateUnitQtyInCatalog(product, unit, 1)" 
@@ -1690,7 +1685,7 @@ onUnmounted(() => {
                                     </div>
                                 </div>
 
-                                <!-- CASE B: Unit is not in Cart -->
+                                <!-- CASE B: Unit is not in Cart for this active tier -->
                                 <div 
                                     v-else
                                     @click.stop="addToCart(product, unit)"
@@ -1706,16 +1701,16 @@ onUnmounted(() => {
                                         <span :class="isFewSearchResults ? 'text-sm font-black' : 'text-xs font-bold'" class="truncate">
                                             {{ unit.unit_name }}
                                         </span>
+                                        <span v-if="getItemQtyInCart(product.id, unit.id) > 0" class="text-[9px] font-bold px-1 rounded bg-slate-200 text-slate-600 shrink-0">
+                                            ({{ getItemQtyInCart(product.id, unit.id) }} di keranjang)
+                                        </span>
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0">
-                                        <span v-if="priceType === 'karyawan' && unit.price_employee && Number(unit.price_employee) < Number(unit.price_retail)" class="line-through text-slate-400 text-[10px] font-normal">
-                                            {{ formatRupiah(unit.price_retail) }}
-                                        </span>
                                         <span :class="isFewSearchResults ? 'text-base font-black' : 'text-xs sm:text-sm font-black'">
-                                            {{ formatRupiah(getUnitPrice(unit)) }}
+                                            {{ formatRupiah(getUnitPrice(unit, activePriceTier)) }}
                                         </span>
                                         <div :class="isFewSearchResults ? 'w-7 h-7 bg-amber-400 text-slate-950 group-hover/unit:bg-slate-950 group-hover/unit:text-white' : 'w-5 h-5 bg-slate-200 group-hover/unit:bg-slate-950 group-hover/unit:text-white'" class="rounded-lg flex items-center justify-center transition shadow-2xs">
-                                            <Plus :class="isFewSearchResults ? 'w-4 h-4 stroke-[3]' : 'w-3 h-3 stroke-[3]'" />
+                                            <Plus :class="isFewSearchResults ? 'w-4 h-4 stroke-[3]' : 'w-3.5 h-3.5 stroke-[3]'" />
                                         </div>
                                     </div>
                                 </div>
@@ -1779,8 +1774,11 @@ onUnmounted(() => {
                         <div>
                             <div class="flex items-center gap-1.5">
                                 <h2 class="text-sm font-black text-slate-900">Keranjang</h2>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                    {{ cart.reduce((sum, item) => sum + item.qty, 0) }}
+                                </span>
                             </div>
-                            <p class="text-[11px] text-slate-400">{{ cart.length }} jenis barang</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">{{ cart.length }} Jenis &bull; {{ getTierLabel(activePriceTier) }}</p>
                         </div>
                     </div>
 
@@ -1791,28 +1789,6 @@ onUnmounted(() => {
                     >
                         <Trash2 class="w-3.5 h-3.5" />
                         <span>Kosongkan</span>
-                    </button>
-                </div>
-
-                <!-- Dual Price Mode Banner in Cart -->
-                <div class="px-4 py-2 border-b flex items-center justify-between transition-colors shrink-0"
-                    :class="priceType === 'karyawan' ? 'bg-amber-500/10 border-amber-300' : 'bg-slate-100/70 border-slate-200'"
-                >
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-black" :class="priceType === 'karyawan' ? 'text-amber-950' : 'text-slate-800'">
-                            {{ priceType === 'karyawan' ? '👨‍💼 Mode Karyawan' : '🛍️ Mode Umum' }}
-                        </span>
-                        <span v-if="priceType === 'karyawan'" class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-md font-bold">
-                            Diskon Pegawai
-                        </span>
-                    </div>
-                    <button
-                        type="button"
-                        @click="togglePriceType"
-                        class="text-[11px] font-bold px-2 py-0.5 rounded-lg border transition cursor-pointer"
-                        :class="priceType === 'karyawan' ? 'bg-white text-amber-900 border-amber-300 hover:bg-amber-50' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'"
-                    >
-                        Ubah ke {{ priceType === 'karyawan' ? 'Umum' : 'Karyawan' }} (F4)
                     </button>
                 </div>
 
@@ -1831,7 +1807,12 @@ onUnmounted(() => {
                     >
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0">
-                                <h4 class="text-xs font-bold text-slate-900 line-clamp-1 leading-snug">{{ item.product.name }}</h4>
+                                <div class="flex items-center gap-1.5">
+                                    <h4 class="text-xs font-bold text-slate-900 line-clamp-1 leading-snug">{{ item.product.name }}</h4>
+                                    <span :class="[getTierBadgeClass(item.tier), 'text-[8px] uppercase px-1.5 py-0.2 rounded border shrink-0']">
+                                        {{ getTierLabel(item.tier) }}
+                                    </span>
+                                </div>
                                 <div class="flex items-center gap-1.5 mt-0.5">
                                     <span class="text-[10px] text-slate-400 font-mono">{{ item.product.sku }}</span>
                                 </div>
@@ -1853,7 +1834,7 @@ onUnmounted(() => {
                                     :key="u.id" 
                                     :value="u.id"
                                 >
-                                    {{ u.unit_name }} ({{ formatRupiah(getUnitPrice(u)) }})
+                                    {{ u.unit_name }} ({{ formatRupiah(getUnitPrice(u, item.tier)) }})
                                 </option>
                             </select>
 
@@ -1864,6 +1845,27 @@ onUnmounted(() => {
                         </div>
 
                         
+
+                        <!-- Strata / Tipe Harga Switcher for this specific Item -->
+                        <div class="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100">
+                            <span class="text-[9px] font-bold uppercase text-slate-400">Tipe Harga:</span>
+                            <div class="flex items-center gap-1">
+                                <button 
+                                    v-for="t in priceTiers" 
+                                    :key="t.id"
+                                    type="button"
+                                    @click="changeCartItemTier(index, t.id)"
+                                    :class="[
+                                        item.tier === t.id 
+                                            ? (item.tier === 'karyawan' ? 'bg-amber-500 text-slate-950 font-black shadow-2xs' : 'bg-slate-900 text-white font-black shadow-2xs') 
+                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-600',
+                                        'px-2 py-0.5 rounded-md text-[10px] font-bold transition cursor-pointer active:scale-95'
+                                    ]"
+                                >
+                                    {{ t.label }}
+                                </button>
+                            </div>
+                        </div>
 
                         <!-- Qty Controls -->
                         <div class="flex items-center justify-between pt-1.5 border-t border-slate-100">
@@ -2223,15 +2225,15 @@ onUnmounted(() => {
                         <div class="flex items-center gap-2">
                             <h3 class="text-sm font-bold text-slate-900">Pembayaran Kasir</h3>
                             <span class="text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider"
-                                :class="priceType === 'karyawan' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200'"
+                                :class="checkoutForm.price_type === 'karyawan' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200'"
                             >
-                                {{ priceType === 'karyawan' ? '👨‍💼 Harga Karyawan' : '🛍️ Harga Umum' }}
+                                {{ checkoutForm.price_type === 'karyawan' ? '👨‍💼 Karyawan' : '🛍️ Umum' }}
                             </span>
                         </div>
                         <p class="text-xs text-slate-500 mt-0.5">
                             Pelanggan: 
                             <span class="font-bold text-slate-900">
-                                {{ selectedEmployeeObj ? selectedEmployeeObj.name + ' (' + (selectedEmployeeObj.department || 'RSIA') + ')' : (priceType === 'karyawan' ? 'Karyawan RSIA' : 'Pelanggan Umum') }}
+                                {{ selectedEmployeeObj ? selectedEmployeeObj.name + ' (' + (selectedEmployeeObj.department || 'RSIA') + ')' : (checkoutForm.price_type === 'karyawan' ? 'Karyawan RSIA' : 'Pelanggan Umum') }}
                             </span>
                         </p>
                     </div>

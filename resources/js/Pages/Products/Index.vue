@@ -73,7 +73,7 @@ const addProductForm = useForm({
             conversion_ratio: 1,
             cost_price: 0,
             price_retail: 0,
-            price_employee: null,
+            price_employee: 0,
             is_base_unit: true,
         }
     ]
@@ -308,7 +308,7 @@ const openEditModal = (product) => {
         conversion_ratio: Number(u.conversion_ratio),
         cost_price: Number(u.cost_price),
         price_retail: Number(u.price_retail),
-        price_employee: (u.price_employee !== null && u.price_employee !== undefined && Number(u.price_employee) > 0) ? Number(u.price_employee) : null,
+        price_employee: Number(u.price_employee || 0),
         is_base_unit: Boolean(u.is_base_unit),
     }));
     isEditModalOpen.value = true;
@@ -320,7 +320,7 @@ const addEditUnitRow = () => {
         conversion_ratio: 12,
         cost_price: 0,
         price_retail: 0,
-        price_employee: null,
+        price_employee: 0,
         is_base_unit: false,
     });
 };
@@ -569,7 +569,7 @@ const addUnitRow = () => {
         conversion_ratio: 12,
         cost_price: 0,
         price_retail: 0,
-        price_employee: null,
+        price_employee: 0,
         is_base_unit: false,
     });
 };
@@ -610,13 +610,13 @@ const formatCurrencyNumber = (val) => {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 };
 
-const handleCurrencyInput = (event, targetObj, key, allowEmpty = false) => {
+const handleCurrencyInput = (event, targetObj, key) => {
     const el = event.target;
     const rawVal = el.value;
     const digitsOnly = rawVal.replace(/[^\d]/g, '');
 
     if (digitsOnly === '') {
-        targetObj[key] = allowEmpty ? null : 0;
+        targetObj[key] = 0;
         el.value = '';
         return;
     }
@@ -1438,7 +1438,8 @@ const submitNewUnit = () => {
                                     <th class="py-3.5 px-4 bg-slate-50">Kategori / Merk</th>
                                     <th class="py-3.5 px-4 text-center bg-slate-50">Status Stok</th>
                                     <th v-if="canSeeCostPrice" class="py-3.5 px-4 bg-slate-50">HPP (Modal)</th>
-                                    <th class="py-3.5 px-4 bg-slate-50">Harga Jual (Umum & Karyawan)</th>
+                                    <th class="py-3.5 px-4 bg-slate-50">1. Umum</th>
+                                    <th class="py-3.5 px-4 bg-slate-50">2. Karyawan</th>
                                     <th class="py-3.5 px-4 text-center bg-slate-50">Aksi</th>
                                 </tr>
                             </thead>
@@ -1490,17 +1491,16 @@ const submitNewUnit = () => {
                                         </div>
                                     </td>
 
-                                    <td class="py-3.5 px-4 space-y-1.5 min-w-[170px]">
-                                        <div v-for="u in product.units" :key="u.id" class="text-[11px] leading-snug">
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">{{ u.unit_name }}:</span>
-                                                <span class="text-slate-950 font-black">{{ formatRupiah(u.price_retail) }}</span>
-                                            </div>
-                                            <div class="flex items-center gap-1 text-[10px] text-amber-800 font-semibold pl-1">
-                                                <span class="text-slate-400 font-normal">Karyawan:</span>
-                                                <span class="font-bold">{{ formatRupiah(u.price_employee || u.price_retail) }}</span>
-                                                <span v-if="!u.price_employee" class="text-[9px] text-slate-400 font-normal italic">(sama)</span>
-                                            </div>
+                                    <td class="py-3.5 px-4 space-y-1">
+                                        <div v-for="u in product.units" :key="u.id" class="text-[11px]">
+                                            <span class="text-slate-400 font-semibold">{{ u.unit_name }}:</span>
+                                            <span class="text-slate-900 font-bold ml-1">{{ formatRupiah(u.price_retail) }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 space-y-1">
+                                        <div v-for="u in product.units" :key="u.id" class="text-[11px]">
+                                            <span class="text-slate-400 font-semibold">{{ u.unit_name }}:</span>
+                                            <span class="font-bold ml-1" :class="Number(u.price_employee) > 0 ? 'text-amber-700' : 'text-slate-400'">{{ formatRupiah(u.price_employee || 0) }}</span>
                                         </div>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
@@ -2481,7 +2481,7 @@ const submitNewUnit = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Harga Umum</label>
+                                        <label class="block text-[10px] font-bold text-slate-700 mb-0.5">1. Umum</label>
                                         <div class="relative">
                                             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 select-none">Rp</span>
                                             <input 
@@ -2495,18 +2495,15 @@ const submitNewUnit = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <div class="flex items-center justify-between mb-0.5">
-                                            <label class="block text-[10px] font-bold text-slate-700">Harga Karyawan</label>
-                                            <span class="text-[9px] text-slate-400 font-medium">(Opsional)</span>
-                                        </div>
+                                        <label class="block text-[10px] font-bold text-slate-700 mb-0.5">2. Karyawan</label>
                                         <div class="relative">
                                             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 select-none">Rp</span>
                                             <input 
                                                 type="text" 
                                                 inputmode="numeric" 
                                                 :value="formatCurrencyNumber(unit.price_employee)" 
-                                                @input="handleCurrencyInput($event, unit, 'price_employee', true)" 
-                                                placeholder="Sama dgn umum" 
+                                                @input="handleCurrencyInput($event, unit, 'price_employee')" 
+                                                placeholder="0" 
                                                 class="w-full bg-white border border-slate-200 rounded-lg pl-7 pr-2 py-1.5 text-xs text-slate-900 font-black placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-slate-400" 
                                             />
                                         </div>
@@ -2881,7 +2878,7 @@ const submitNewUnit = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Harga Umum</label>
+                                        <label class="block text-[10px] font-bold text-slate-700 mb-0.5">1. Umum</label>
                                         <div class="relative">
                                             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 select-none">Rp</span>
                                             <input 
@@ -2895,18 +2892,15 @@ const submitNewUnit = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <div class="flex items-center justify-between mb-0.5">
-                                            <label class="block text-[10px] font-bold text-slate-700">Harga Karyawan</label>
-                                            <span class="text-[9px] text-slate-400 font-medium">(Opsional)</span>
-                                        </div>
+                                        <label class="block text-[10px] font-bold text-slate-700 mb-0.5">2. Karyawan</label>
                                         <div class="relative">
                                             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 select-none">Rp</span>
                                             <input 
                                                 type="text" 
                                                 inputmode="numeric" 
                                                 :value="formatCurrencyNumber(unit.price_employee)" 
-                                                @input="handleCurrencyInput($event, unit, 'price_employee', true)" 
-                                                placeholder="Sama dgn umum" 
+                                                @input="handleCurrencyInput($event, unit, 'price_employee')" 
+                                                placeholder="0" 
                                                 class="w-full bg-white border border-slate-200 rounded-lg pl-7 pr-2 py-1.5 text-xs text-slate-900 font-black placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-slate-400" 
                                             />
                                         </div>
