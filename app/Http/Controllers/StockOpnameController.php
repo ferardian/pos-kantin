@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\StockAdjustment;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
@@ -14,50 +15,76 @@ use Inertia\Inertia;
 
 class StockOpnameController extends Controller
 {
-    public function index()
+    /**
+     * Tampilkan halaman utama Stok Opname
+     */
+    public function index(Request $request)
     {
-        $products = Product::with(['category', 'brand', 'units'])->orderBy('name')->get();
-        $categories = Category::orderBy('name')->get();
-        
-        $opnames = StockOpname::with(['user', 'category', 'items.product.units', 'voidedBy'])
-            ->latest()
-            ->take(100)
+        $user = Auth::user();
+
+        // Kasir hanya boleh jika diizinkan oleh admin di pengaturan sistem
+        if ($user->role === 'kasir') {
+            $canAccess = Setting::get('kasir_can_access_stock_opname', '0');
+            if ($canAccess !== '1' && $canAccess !== true && $canAccess !== 1) {
+                return redirect()->route('pos.index')->with('error', 'Akses Stok Opname untuk Kasir saat ini dinonaktifkan.');
+            }
+        }
+
+        // Ambil produk aktif beserta unit, kategori, dan lokasi
+        $products = Product::with(['units', 'category', 'productLocations.location'])
+            ->orderBy('name', 'asc')
             ->get();
 
-        $stockLogs = StockAdjustment::with(['product.units', 'user'])
-            ->latest()
-            ->take(50)
-            ->get();
+        $categories = Category::orderBy('name', 'asc')->get();
 
-        // Generate next nomor dokumen SO otomatis
+        // Riwayat dokumen Stok Opname
+        $opnames = StockOpname::with(['user', 'category', 'voidedBy', 'items.product.units'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        // Pengaturan izin kasir (untuk ditampilkan ke admin di tab pengaturan)
+        $canAccessSo = Setting::get('kasir_can_access_stock_opname', '0');
+        $allowCashierOpname = ($canAccessSo === '1' || $canAccessSo === true || $canAccessSo === 1);
+
+        // Generate nomor dokumen rekomendasi otomatis (SO-YYYYMM-XXXX)
         $prefix = 'SO-' . date('Ym') . '-';
-        $lastSo = StockOpname::where('opname_number', 'like', $prefix . '%')
-            ->orderByDesc('id')
+        $lastOpname = StockOpname::where('opname_number', 'like', $prefix . '%')
+            ->orderBy('id', 'desc')
             ->first();
-
+        
         $nextSeq = 1;
-        if ($lastSo) {
-            $lastNum = (int)substr($lastSo->opname_number, -4);
-            $nextSeq = $lastNum + 1;
+        if ($lastOpname) {
+            $lastSeq = (int)substr($lastOpname->opname_number, -4);
+            $nextSeq = $lastSeq + 1;
         }
         $autoOpnameNumber = $prefix . str_pad($nextSeq, 4, '0', STR_PAD_LEFT);
+
+        $stockLogs = StockAdjustment::with(['product', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get();
 
         return Inertia::render('StockOpnames/Index', [
             'products' => $products,
             'categories' => $categories,
             'opnames' => $opnames,
             'stockLogs' => $stockLogs,
+            'allowCashierOpname' => $allowCashierOpname,
             'autoOpnameNumber' => $autoOpnameNumber,
-            'currentUser' => Auth::user(),
+            'currentUser' => $user,
         ]);
     }
 
+    /**
+     * Simpan sesi Stok Opname baru dan terapkan selisih (delta) ke stok terkini.
+     */
     public function store(Request $request)
     {
         $user = Auth::user();
-        if ($user && $user->role === 'kasir') {
-            $canAccessSo = \App\Models\Setting::get('kasir_can_access_stock_opname', '0');
-            if ($canAccessSo !== '1' && $canAccessSo !== true && $canAccessSo !== 1) {
+
+        if ($user->role === 'kasir') {
+            $canAccess = Setting::get('kasir_can_access_stock_opname', '0');
+            if ($canAccess !== '1' && $canAccess !== true && $canAccess !== 1) {
                 return back()->with('error', 'Akses ditolak: Izin Stok Opname untuk Kasir sedang dinonaktifkan oleh Admin.');
             }
         }
@@ -142,13 +169,11 @@ class StockOpnameController extends Controller
                     'qty_difference' => $delta,
                     'cost_price_per_unit' => $costPrice,
                     'subtotal_cost_diff' => $subtotalCostDiff,
+                    'is_voided' => false,
                     'notes' => $item['notes'] ?? null,
                 ]);
 
                 // Terapkan DELTA ke stok terkini (bukan timpa dengan nilai absolut)
-                // Contoh: snapshot=50, fisik=48 → delta=-2
-                // Jika ada 3 penjualan selama opname: stok_terkini=47
-                // Hasil: 47 + (-2) = 45 ✅  (bukan paksa jadi 48 ✗)
                 if (abs($delta) > 0.0001) {
                     $newStock = max(0, $product->stock_physical + $delta);
                     $product->stock_physical = $newStock;
@@ -167,20 +192,103 @@ class StockOpnameController extends Controller
 
             return redirect()->route('stock-opnames.index')->with(
                 'success',
-                "Dokumen Stok Opname '{$opname->opname_number}' berhasil diterapkan. {$totalDiff} produk disesuaikan stok-nya (metode delta-snapshot)."
+                "Dokumen Stok Opname '{$opname->opname_number}' berhasil diterapkan. {$totalChecked} produk dicatat, {$totalDiff} produk disesuaikan stok-nya."
             );
         });
     }
 
     /**
-     * Void / Batalkan dokumen opname — balik delta yang sudah diterapkan.
-     * Hanya Admin/Gudang yang bisa void. Kasir tidak bisa.
+     * Void / Batalkan HANYA SATU ITEM tertentu di dalam dokumen opname.
+     * Tidak membatalkan item-item lain yang sudah benar.
+     */
+    public function voidItem(Request $request, $itemId)
+    {
+        $user = Auth::user();
+
+        if (!in_array($user->role, ['admin', 'gudang'])) {
+            return back()->with('error', 'Akses ditolak: Hanya Admin atau Gudang yang dapat membatalkan item Stok Opname.');
+        }
+
+        $validated = $request->validate([
+            'void_reason' => 'required|string|max:500',
+        ]);
+
+        return DB::transaction(function () use ($itemId, $validated, $user) {
+            $item = StockOpnameItem::with(['stockOpname', 'product'])->findOrFail($itemId);
+            $opname = $item->stockOpname;
+
+            if ($item->is_voided) {
+                return back()->with('error', 'Item ini sudah pernah dibatalkan sebelumnya.');
+            }
+
+            if ($opname->is_voided) {
+                return back()->with('error', 'Dokumen opname ini sudah dibatalkan secara keseluruhan.');
+            }
+
+            $delta = (float)$item->qty_difference;
+
+            // Balik mutasi stok jika ada penyesuaian yang pernah diterapkan
+            if (abs($delta) > 0.0001 && $item->product) {
+                $product = Product::lockForUpdate()->find($item->product_id);
+                if ($product) {
+                    $reverseDelta = -$delta;
+                    $newStock = max(0, $product->stock_physical + $reverseDelta);
+                    $product->stock_physical = $newStock;
+                    $product->save();
+
+                    StockAdjustment::create([
+                        'product_id' => $product->id,
+                        'user_id' => $user->id,
+                        'type' => $reverseDelta > 0 ? 'in' : 'out',
+                        'qty_change' => $reverseDelta,
+                        'reason' => "Void Item SO {$opname->opname_number} ({$product->name}): {$validated['void_reason']}",
+                    ]);
+                }
+            }
+
+            // Tandai item sebagai void
+            $item->update([
+                'is_voided' => true,
+                'voided_at' => now(),
+                'void_reason' => $validated['void_reason'],
+            ]);
+
+            // Hitung ulang rekap selisih pada dokumen opname
+            $activeItems = $opname->items()->where('is_voided', false)->get();
+            $totalDiff = 0;
+            $totalQtyDiff = 0;
+            $totalCostDiff = 0;
+
+            foreach ($activeItems as $actItem) {
+                $d = (float)$actItem->qty_difference;
+                if (abs($d) > 0.0001) {
+                    $totalDiff++;
+                    $totalQtyDiff += $d;
+                    $totalCostDiff += (float)$actItem->subtotal_cost_diff;
+                }
+            }
+
+            $opname->update([
+                'total_items_diff' => $totalDiff,
+                'total_qty_diff' => $totalQtyDiff,
+                'total_cost_diff' => $totalCostDiff,
+            ]);
+
+            $productName = $item->product ? $item->product->name : 'Item';
+            return back()->with(
+                'success',
+                "Koreksi untuk produk '{$productName}' berhasil dibatalkan dan stok dikembalikan. Item lain dalam dokumen tetap sah."
+            );
+        });
+    }
+
+    /**
+     * Void / Batalkan SELURUH dokumen opname — balik semua delta yang belum di-void.
      */
     public function void(Request $request, $id)
     {
         $user = Auth::user();
 
-        // Hanya admin dan gudang yang boleh void
         if (!in_array($user->role, ['admin', 'gudang'])) {
             return back()->with('error', 'Akses ditolak: Hanya Admin atau Gudang yang dapat membatalkan dokumen Stok Opname.');
         }
@@ -196,44 +304,54 @@ class StockOpnameController extends Controller
                 return back()->with('error', "Dokumen {$opname->opname_number} sudah pernah dibatalkan sebelumnya.");
             }
 
-            // Balik delta yang pernah diterapkan
+            // Balik delta untuk item yang belum pernah di-void per-item
             $reversedCount = 0;
             foreach ($opname->items as $item) {
-                $delta = (float)$item->qty_difference; // delta yang pernah diterapkan
-                if (abs($delta) < 0.0001) continue;
+                if ($item->is_voided) continue; // Jangan double-reverse jika sudah pernah di-void satu per satu
 
-                $product = Product::lockForUpdate()->find($item->product_id);
-                if (!$product) continue;
+                $delta = (float)$item->qty_difference;
+                if (abs($delta) > 0.0001) {
+                    $product = Product::lockForUpdate()->find($item->product_id);
+                    if ($product) {
+                        $reverseDelta = -$delta;
+                        $newStock = max(0, $product->stock_physical + $reverseDelta);
+                        $product->stock_physical = $newStock;
+                        $product->save();
 
-                // Balik: kalau dulu +2, sekarang -2 dan sebaliknya
-                $reverseDelta = -$delta;
-                $newStock = max(0, $product->stock_physical + $reverseDelta);
-                $product->stock_physical = $newStock;
-                $product->save();
+                        StockAdjustment::create([
+                            'product_id' => $product->id,
+                            'user_id' => $user->id,
+                            'type' => $reverseDelta > 0 ? 'in' : 'out',
+                            'qty_change' => $reverseDelta,
+                            'reason' => "Void Dokumen SO {$opname->opname_number}: {$validated['void_reason']}",
+                        ]);
 
-                StockAdjustment::create([
-                    'product_id' => $product->id,
-                    'user_id' => $user->id,
-                    'type' => $reverseDelta > 0 ? 'in' : 'out',
-                    'qty_change' => $reverseDelta,
-                    'reason' => "Void/Batal Stok Opname {$opname->opname_number}: {$validated['void_reason']}",
+                        $reversedCount++;
+                    }
+                }
+
+                $item->update([
+                    'is_voided' => true,
+                    'voided_at' => now(),
+                    'void_reason' => $validated['void_reason'],
                 ]);
-
-                $reversedCount++;
             }
 
-            // Tandai dokumen sebagai void
+            // Tandai seluruh dokumen sebagai void
             $opname->update([
                 'is_voided' => true,
                 'voided_at' => now(),
                 'voided_by' => $user->id,
                 'void_reason' => $validated['void_reason'],
                 'status' => 'voided',
+                'total_items_diff' => 0,
+                'total_qty_diff' => 0,
+                'total_cost_diff' => 0,
             ]);
 
             return back()->with(
                 'success',
-                "Dokumen {$opname->opname_number} berhasil dibatalkan. {$reversedCount} produk stok-nya telah dikembalikan ke kondisi sebelum opname."
+                "Dokumen {$opname->opname_number} berhasil dibatalkan seutuhnya. {$reversedCount} penyesuaian stok produk telah dikembalikan."
             );
         });
     }
