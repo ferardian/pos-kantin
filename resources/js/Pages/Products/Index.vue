@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
 import { useForm, router, Head, usePage, Link } from '@inertiajs/vue3';
+import { appRoute } from '@/Utils/route';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import JsBarcode from 'jsbarcode';
 import { 
@@ -635,6 +636,55 @@ const handleCurrencyInput = (event, targetObj, key) => {
     } catch (e) {}
 };
 
+const stockFilter = ref('all');
+
+const lowStockCount = computed(() => {
+    return props.products.filter(p => {
+        const avail = Number(p.stock_available ?? 0);
+        const min = Number(p.min_stock ?? 0);
+        const threshold = min > 0 ? min : 5;
+        return avail > 0 && avail <= threshold;
+    }).length;
+});
+
+const emptyDeficitCount = computed(() => {
+    return props.products.filter(p => Number(p.stock_available ?? 0) <= 0).length;
+});
+
+const getProductStockBadge = (product) => {
+    const avail = Number(product.stock_available ?? 0);
+    const min = Number(product.min_stock ?? 0);
+    const threshold = min > 0 ? min : 5;
+    const unit = product.units?.[0]?.unit_name || '';
+
+    if (avail < 0) {
+        return {
+            text: 'Defisit: ' + avail + ' ' + unit,
+            badgeClass: 'text-rose-900 bg-rose-100 border border-rose-300 font-black animate-pulse',
+            title: 'Stok minus! Terjadi penjualan melebihi data stok sistem'
+        };
+    }
+    if (avail === 0) {
+        return {
+            text: 'Habis (0 ' + unit + ')',
+            badgeClass: 'text-rose-700 bg-rose-50 border border-rose-200 font-extrabold',
+            title: 'Stok kosong di sistem'
+        };
+    }
+    if (avail <= threshold) {
+        return {
+            text: 'Menipis: ' + avail + ' ' + unit,
+            badgeClass: 'text-amber-900 bg-amber-100 border border-amber-300 font-black',
+            title: 'Stok mendekati habis (Batas min: ' + (min > 0 ? min : 5) + ')'
+        };
+    }
+    return {
+        text: 'Sedia: ' + avail + ' ' + unit,
+        badgeClass: 'text-emerald-700 bg-emerald-50 border border-emerald-200 font-bold',
+        title: 'Stok siap jual aman'
+    };
+};
+
 const filteredProducts = computed(() => {
     return props.products.filter(p => {
         const matchesCategory = opnameCategoryFilter.value === 'all' || p.category_id === Number(opnameCategoryFilter.value);
@@ -644,7 +694,19 @@ const filteredProducts = computed(() => {
             p.sku.toLowerCase().includes(q) || 
             (p.barcode && p.barcode.includes(q)) ||
             (p.brand && p.brand.name.toLowerCase().includes(q));
-        return matchesCategory && matchesSearch;
+        if (!matchesCategory || !matchesSearch) return false;
+
+        if (stockFilter.value === 'low') {
+            const avail = Number(p.stock_available ?? 0);
+            const min = Number(p.min_stock ?? 0);
+            const threshold = min > 0 ? min : 5;
+            return avail > 0 && avail <= threshold;
+        }
+        if (stockFilter.value === 'empty_deficit') {
+            const avail = Number(p.stock_available ?? 0);
+            return avail <= 0;
+        }
+        return true;
     });
 });
 
@@ -1356,7 +1418,7 @@ const submitNewUnit = () => {
                     </button>
                     <Link
                         v-if="user.role === 'admin' || user.role === 'gudang'"
-                        href="/stock-opnames"
+                        :href="appRoute('/stock-opnames')"
                         class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 transition flex items-center gap-1.5 cursor-pointer ml-auto border border-amber-200"
                     >
                         <ClipboardCheck class="w-3.5 h-3.5 text-amber-700" />
@@ -1381,9 +1443,39 @@ const submitNewUnit = () => {
                         </div>
                         <div class="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 shrink-0">
                             Total: <strong class="text-slate-900">{{ products.length }}</strong> Barang
-                            <span v-if="searchQuery.trim()" class="text-amber-700 ml-1">
+                            <span v-if="searchQuery.trim() || stockFilter !== 'all'" class="text-amber-700 ml-1">
                                 (Ditemukan {{ filteredProducts.length }})
                             </span>
+                        </div>
+
+                        <!-- Stock Filter Pills -->
+                        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs shrink-0">
+                            <button 
+                                type="button"
+                                @click="stockFilter = 'all'"
+                                :class="stockFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'"
+                                class="px-2.5 py-1 rounded-lg transition cursor-pointer"
+                            >
+                                Semua
+                            </button>
+                            <button 
+                                type="button"
+                                @click="stockFilter = 'low'"
+                                :class="stockFilter === 'low' ? 'bg-amber-500 text-slate-950 shadow-2xs font-black' : 'text-amber-800 hover:bg-amber-100'"
+                                class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer font-bold"
+                            >
+                                <span>⚠️ Menipis</span>
+                                <span class="px-1.5 py-0.2 bg-amber-200 text-amber-950 rounded-full text-[10px] font-black">{{ lowStockCount }}</span>
+                            </button>
+                            <button 
+                                type="button"
+                                @click="stockFilter = 'empty_deficit'"
+                                :class="stockFilter === 'empty_deficit' ? 'bg-rose-600 text-white shadow-2xs font-black' : 'text-rose-700 hover:bg-rose-100'"
+                                class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer font-bold"
+                            >
+                                <span>⛔ Habis / Minus</span>
+                                <span class="px-1.5 py-0.2 bg-rose-200 text-rose-950 rounded-full text-[10px] font-black">{{ emptyDeficitCount }}</span>
+                            </button>
                         </div>
                     </div>
 
@@ -1468,11 +1560,12 @@ const submitNewUnit = () => {
                                     <td class="py-3.5 px-4 text-center">
                                         <div class="inline-flex flex-col items-center space-y-1">
                                             <span 
-                                                :class="product.stock_available <= product.min_stock ? 'text-rose-700 bg-rose-50 border border-rose-200' : 'text-emerald-700 bg-emerald-50 border border-emerald-200'"
-                                                class="px-2.5 py-1 rounded-full text-xs font-black"
-                                                title="Stok Siap Jual ke Kasir"
+                                                :class="getProductStockBadge(product).badgeClass"
+                                                :title="getProductStockBadge(product).title"
+                                                class="px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1 shadow-2xs"
                                             >
-                                                Sedia: {{ product.stock_available }} {{ product.units[0]?.unit_name }}
+                                                <AlertCircle v-if="Number(product.stock_available ?? 0) <= (Number(product.min_stock ?? 0) > 0 ? Number(product.min_stock) : 5)" class="w-3 h-3 shrink-0" />
+                                                {{ getProductStockBadge(product).text }}
                                             </span>
                                             <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5">
                                                 <span>Fisik: <strong>{{ product.stock_physical }}</strong></span>
@@ -2949,7 +3042,7 @@ const submitNewUnit = () => {
                 <div class="space-y-3 text-xs">
                     <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-[11px] text-amber-900">
                         <span>💡 Untuk belanja / kulakan stok supplier, gunakan menu <strong>Penerimaan Barang</strong>.</span>
-                        <Link href="/goods-receipts" class="text-amber-700 underline font-bold hover:text-amber-900 shrink-0 ml-2">Buka Menu</Link>
+                        <Link :href="appRoute('/goods-receipts')" class="text-amber-700 underline font-bold hover:text-amber-900 shrink-0 ml-2">Buka Menu</Link>
                     </div>
 
                     <div>

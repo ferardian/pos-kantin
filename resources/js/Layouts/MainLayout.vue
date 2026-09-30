@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import { appRoute } from '@/Utils/route';
 import { 
     Truck, Store, ShoppingCart, ClipboardList, ClipboardCheck, Package, Users, BarChart3, 
     LogOut, CheckCircle, AlertTriangle, Shield,
@@ -30,35 +31,36 @@ const toggleSidebar = () => {
 };
 
 const allNavigation = computed(() => [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'kasir'] },
-    { name: 'Kasir POS', href: '/pos', icon: ShoppingCart, roles: ['admin', 'kasir'] },
-    { name: 'Titip Jual (Konsinyasi)', href: '/consignments', icon: Store, roles: ['admin', 'kasir'] },
+    { name: 'Dashboard', href: appRoute('/dashboard'), rawPath: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'kasir'] },
+    { name: 'Kasir POS', href: appRoute('/pos'), rawPath: '/pos', icon: ShoppingCart, roles: ['admin', 'kasir'] },
+    { name: 'Titip Jual (Konsinyasi)', href: appRoute('/consignments'), rawPath: '/consignments', icon: Store, roles: ['admin', 'kasir'] },
     { 
         name: 'Penerimaan Barang', 
-        href: '/goods-receipts', 
+        href: appRoute('/goods-receipts'), 
+        rawPath: '/goods-receipts', 
         icon: Truck, 
         roles: ['admin', 'kasir', 'gudang'],
         badge: Number(page.props.pendingGoodsReceiptsCount || 0)
     },
-    { name: 'Master Produk', href: '/products', icon: Package, roles: ['admin', 'kasir', 'gudang'] },
-    { name: 'Stok Opname', href: '/stock-opnames', icon: ClipboardCheck, roles: ['admin', 'gudang', 'kasir'] },
-    { name: 'Piutang Karyawan', href: '/receivables', icon: ClipboardList, roles: ['admin', 'kasir'] },
-    { name: 'Buku Kas & Cashbox', href: '/cashboxes', icon: Wallet, roles: ['admin', 'kasir'] },
-    { name: 'Laporan & Omset', href: '/reports', icon: BarChart3, roles: ['admin'] },
-    { name: 'Kelola Pengguna & Staff', href: '/users', icon: UserCog, roles: ['admin'] },
-    { name: 'Pengaturan Kantin', href: '/settings', icon: Settings, roles: ['admin'] },
+    { name: 'Master Produk', href: appRoute('/products'), rawPath: '/products', icon: Package, roles: ['admin', 'kasir', 'gudang'] },
+    { name: 'Stok Opname', href: appRoute('/stock-opnames'), rawPath: '/stock-opnames', icon: ClipboardCheck, roles: ['admin', 'gudang', 'kasir'] },
+    { name: 'Piutang Karyawan', href: appRoute('/receivables'), rawPath: '/receivables', icon: ClipboardList, roles: ['admin', 'kasir'] },
+    { name: 'Buku Kas & Cashbox', href: appRoute('/cashboxes'), rawPath: '/cashboxes', icon: Wallet, roles: ['admin', 'kasir'] },
+    { name: 'Laporan & Omset', href: appRoute('/reports'), rawPath: '/reports', icon: BarChart3, roles: ['admin'] },
+    { name: 'Kelola Pengguna & Staff', href: appRoute('/users'), rawPath: '/users', icon: UserCog, roles: ['admin'] },
+    { name: 'Pengaturan Kantin', href: appRoute('/settings'), rawPath: '/settings', icon: Settings, roles: ['admin'] },
 ]);
 
 const navigation = computed(() => {
     const role = user.value.role || 'kasir';
     return allNavigation.value.filter(item => {
-        if (item.href === '/products' && role === 'kasir') {
+        if (item.rawPath === '/products' && role === 'kasir') {
             const canAccess = settings.value?.kasir_can_access_products;
             if (canAccess === '0' || canAccess === false) {
                 return false;
             }
         }
-        if (item.href === '/stock-opnames' && role === 'kasir') {
+        if (item.rawPath === '/stock-opnames' && role === 'kasir') {
             const canAccessSo = settings.value?.kasir_can_access_stock_opname;
             if (canAccessSo !== '1' && canAccessSo !== true && canAccessSo !== 1) {
                 return false;
@@ -187,14 +189,14 @@ watch(currentUrl, () => {
                                     :href="item.href"
                                     @click="isMobileMenuOpen = false"
                                     :class="[
-                                        currentUrl.startsWith(item.href) 
+                                        currentUrl.startsWith(item.rawPath || item.href) 
                                             ? 'bg-amber-50 text-amber-700 font-bold border border-amber-200/80 shadow-xs' 
                                             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent',
                                         'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150'
                                     ]"
                                 >
                                     <div class="flex items-center gap-3">
-                                        <component :is="item.icon" :class="currentUrl.startsWith(item.href) ? 'text-amber-600' : 'text-slate-400'" class="w-4 h-4 shrink-0" />
+                                        <component :is="item.icon" :class="currentUrl.startsWith(item.rawPath || item.href) ? 'text-amber-600' : 'text-slate-400'" class="w-4 h-4 shrink-0" />
                                         <span>{{ item.name }}</span>
                                     </div>
                                     <span 
@@ -223,7 +225,7 @@ watch(currentUrl, () => {
                                 </div>
                             </div>
                             <Link 
-                                href="/logout" 
+                                :href="appRoute('/logout')" 
                                 method="post" 
                                 as="button" 
                                 class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
@@ -302,7 +304,7 @@ watch(currentUrl, () => {
                             :href="item.href"
                             :title="isSidebarCollapsed ? item.name : undefined"
                             :class="[
-                                currentUrl.startsWith(item.href) 
+                                currentUrl.startsWith(item.rawPath || item.href) 
                                     ? 'bg-amber-50 text-amber-700 font-bold border border-amber-200/80 shadow-xs' 
                                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent',
                                 isSidebarCollapsed 
@@ -311,7 +313,7 @@ watch(currentUrl, () => {
                             ]"
                         >
                             <div :class="isSidebarCollapsed ? 'flex items-center justify-center relative' : 'flex items-center gap-3'">
-                                <component :is="item.icon" :class="currentUrl.startsWith(item.href) ? 'text-amber-600' : 'text-slate-400 group-hover:text-slate-700'" class="w-4 h-4 shrink-0" />
+                                <component :is="item.icon" :class="currentUrl.startsWith(item.rawPath || item.href) ? 'text-amber-600' : 'text-slate-400 group-hover:text-slate-700'" class="w-4 h-4 shrink-0" />
                                 <span v-if="!isSidebarCollapsed">{{ item.name }}</span>
                                 <span 
                                     v-if="isSidebarCollapsed && item.badge > 0" 
@@ -346,7 +348,7 @@ watch(currentUrl, () => {
                         </div>
                     </div>
                     <Link 
-                        href="/logout" 
+                        :href="appRoute('/logout')" 
                         method="post" 
                         as="button" 
                         class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
@@ -364,7 +366,7 @@ watch(currentUrl, () => {
                         {{ user.name ? user.name.charAt(0) : 'U' }}
                     </div>
                     <Link 
-                        href="/logout" 
+                        :href="appRoute('/logout')" 
                         method="post" 
                         as="button" 
                         class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"

@@ -33,7 +33,7 @@ class Product extends Model
 
     public function getStockAvailableAttribute()
     {
-        return max(0, (float)$this->stock_physical - (float)$this->stock_booked);
+        return (float)$this->stock_physical - (float)$this->stock_booked;
     }
 
     public function consignor()

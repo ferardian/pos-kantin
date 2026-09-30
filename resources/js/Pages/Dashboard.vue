@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { appRoute } from '@/Utils/route';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import { 
     LayoutDashboard, Wallet, Receipt, Package, TrendingUp, 
@@ -84,7 +85,7 @@ const reloadPage = () => {
                         <span class="hidden sm:inline">Refresh Data</span>
                     </button>
                     <Link 
-                        href="/pos" 
+                        :href="appRoute('/pos')" 
                         class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition shadow-md active:scale-95"
                     >
                         <ShoppingCart class="w-4 h-4" />
@@ -288,7 +289,7 @@ const reloadPage = () => {
                             <h3 class="text-xs font-black uppercase tracking-wider text-slate-900">Produk Terlaris Bulan Ini</h3>
                             <p class="text-[11px] text-slate-500">Ranking barang paling banyak terjual</p>
                         </div>
-                        <Link href="/reports" class="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
+                        <Link :href="appRoute('/reports')" class="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
                             <span>Lihat Semua</span>
                             <ArrowRight class="w-3.5 h-3.5" />
                         </Link>
@@ -329,7 +330,7 @@ const reloadPage = () => {
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <!-- Alert Stok Kritis -->
                 <Link 
-                    href="/products"
+                    :href="appRoute('/products')"
                     class="bg-white border border-slate-200 hover:border-amber-400 rounded-3xl p-4.5 shadow-xs flex items-center justify-between transition group cursor-pointer"
                 >
                     <div class="flex items-center gap-3">
@@ -346,7 +347,7 @@ const reloadPage = () => {
 
                 <!-- Kasir POS Kantin -->
                 <Link 
-                    href="/pos"
+                    :href="appRoute('/pos')"
                     class="bg-white border border-slate-200 hover:border-emerald-400 rounded-3xl p-4.5 shadow-xs flex items-center justify-between transition group cursor-pointer"
                 >
                     <div class="flex items-center gap-3">
@@ -363,7 +364,7 @@ const reloadPage = () => {
 
                 <!-- Total Piutang Aktif -->
                 <Link 
-                    href="/receivables"
+                    :href="appRoute('/receivables')"
                     class="bg-white border border-slate-200 hover:border-purple-400 rounded-3xl p-4.5 shadow-xs flex items-center justify-between transition group cursor-pointer"
                 >
                     <div class="flex items-center gap-3">

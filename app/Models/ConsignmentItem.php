@@ -18,6 +18,7 @@ class ConsignmentItem extends Model
         'qty_returned',
         'cost_price',
         'selling_price',
+        'price_employee',
         'subtotal_payable',
         'subtotal_profit',
     ];
@@ -25,6 +26,7 @@ class ConsignmentItem extends Model
     protected $casts = [
         'cost_price' => 'float',
         'selling_price' => 'float',
+        'price_employee' => 'float',
         'subtotal_payable' => 'float',
         'subtotal_profit' => 'float',
     ];

@@ -17,6 +17,8 @@ class StockOpname extends Model
         'total_qty_physical' => 'float',
         'total_qty_diff' => 'float',
         'total_cost_diff' => 'float',
+        'is_voided' => 'boolean',
+        'voided_at' => 'datetime',
     ];
 
     public function user()
@@ -32,5 +34,10 @@ class StockOpname extends Model
     public function items()
     {
         return $this->hasMany(StockOpnameItem::class);
+    }
+
+    public function voidedBy()
+    {
+        return $this->belongsTo(User::class, 'voided_by');
     }
 }

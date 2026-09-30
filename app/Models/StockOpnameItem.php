@@ -12,6 +12,7 @@ class StockOpnameItem extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'qty_snapshot' => 'float',
         'qty_system' => 'float',
         'qty_physical' => 'float',
         'qty_difference' => 'float',

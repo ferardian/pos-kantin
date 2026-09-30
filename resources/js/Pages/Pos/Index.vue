@@ -203,6 +203,44 @@ const getTierBadgeClass = (tier) => {
     }
 };
 
+const getStockStatus = (product) => {
+    const avail = Number(product.stock_available ?? 0);
+    const min = Number(product.min_stock ?? 0);
+    const threshold = min > 0 ? min : 5;
+    const baseUnitName = product.units?.[0]?.unit_name || '';
+
+    if (avail < 0) {
+        return {
+            type: 'deficit',
+            isWarning: true,
+            label: 'Defisit: ' + avail + ' ' + baseUnitName,
+            badgeClass: 'text-rose-900 bg-rose-100 border border-rose-300 font-black animate-pulse'
+        };
+    }
+    if (avail === 0) {
+        return {
+            type: 'empty',
+            isWarning: true,
+            label: 'Habis (0 ' + baseUnitName + ')',
+            badgeClass: 'text-rose-700 bg-rose-50 border border-rose-200 font-extrabold'
+        };
+    }
+    if (avail <= threshold) {
+        return {
+            type: 'low',
+            isWarning: true,
+            label: 'Menipis: ' + avail + ' ' + baseUnitName,
+            badgeClass: 'text-amber-900 bg-amber-100 border border-amber-300 font-black'
+        };
+    }
+    return {
+        type: 'normal',
+        isWarning: false,
+        label: 'Sedia: ' + avail + ' ' + baseUnitName,
+        badgeClass: 'text-emerald-700 bg-emerald-50 border border-emerald-200 font-bold'
+    };
+};
+
 // Add to Cart
 const addToCart = (product, specificUnit = null, specificTier = null) => {
     const unit = specificUnit || product.units.find(u => u.is_base_unit) || product.units[0];
@@ -283,6 +321,14 @@ const changeCartItemTier = (itemIndex, newTier) => {
 // Change active price tier
 const setPriceTier = (tier) => {
     activePriceTier.value = tier;
+    // Sinkronkan seluruh barang yang sudah ada di keranjang ke tier yang baru
+    if (cart.value && cart.value.length > 0) {
+        cart.value.forEach(item => {
+            item.tier = tier;
+            item.unit_price = getUnitPrice(item.unit, tier);
+            item.subtotal = item.qty * item.unit_price;
+        });
+    }
     focusSearchInput();
 };
 
@@ -1613,12 +1659,13 @@ onUnmounted(() => {
                                 </span>
                                 <span 
                                     :class="[
-                                        product.stock_available <= product.min_stock ? 'text-rose-700 bg-rose-50 border border-rose-200' : 'text-emerald-700 bg-emerald-50 border border-emerald-200',
+                                        getStockStatus(product).badgeClass,
                                         isFewSearchResults ? 'text-xs px-2.5 py-1' : 'text-[10px] px-2 py-0.5'
                                     ]"
-                                    class="rounded-md font-extrabold"
+                                    class="rounded-md font-extrabold flex items-center gap-1 shrink-0"
                                 >
-                                    Sedia: {{ product.stock_available }} {{ product.units[0]?.unit_name }}
+                                    <AlertCircle v-if="getStockStatus(product).isWarning" class="w-3 h-3 shrink-0" />
+                                    <span>{{ getStockStatus(product).label }}</span>
                                 </span>
                             </div>
 
@@ -1646,38 +1693,48 @@ onUnmounted(() => {
                                 <div 
                                     v-if="getItemQtyInCart(product.id, unit.id, activePriceTier) > 0"
                                     :class="[
-                                        isFewSearchResults ? 'p-3 rounded-2xl min-h-[56px]' : 'p-2 rounded-xl min-h-[44px]',
-                                        'bg-amber-50/90 border-2 border-amber-500 flex items-center justify-between shadow-xs transition-all'
+                                        isFewSearchResults ? 'p-3 rounded-2xl' : 'p-2 rounded-xl',
+                                        'bg-amber-50/90 border-2 border-amber-500 flex flex-col gap-1.5 shadow-xs transition-all'
                                     ]"
                                     @click.stop
                                 >
-                                    <div class="min-w-0 pr-2">
-                                        <div class="flex items-center gap-1">
-                                            <p :class="isFewSearchResults ? 'text-xs sm:text-sm' : 'text-xs'" class="font-black text-amber-950 truncate">{{ unit.unit_name }}</p>
-                                            <span class="text-[8px] font-black px-1 rounded uppercase" :class="activePriceTier === 'karyawan' ? 'bg-amber-500 text-slate-950' : 'bg-slate-200 text-slate-700'">
+                                    <!-- Baris 1: Satuan, Tipe Tier & Harga Utuh -->
+                                    <div class="flex items-center justify-between gap-1.5 min-w-0">
+                                        <div class="flex items-center gap-1 min-w-0">
+                                            <span :class="isFewSearchResults ? 'text-xs sm:text-sm' : 'text-xs'" class="font-black text-amber-950 truncate">
+                                                {{ unit.unit_name }}
+                                            </span>
+                                            <span class="text-[8px] font-black px-1.5 py-0.2 rounded uppercase shrink-0" :class="activePriceTier === 'karyawan' ? 'bg-amber-500 text-slate-950 shadow-2xs' : 'bg-slate-200 text-slate-700'">
                                                 {{ getTierLabel(activePriceTier) }}
                                             </span>
                                         </div>
-                                        <p :class="isFewSearchResults ? 'text-xs sm:text-sm font-black' : 'text-[11px] font-extrabold'" class="text-amber-900">
+                                        <span :class="isFewSearchResults ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'" class="font-black text-amber-900 shrink-0">
                                             {{ formatRupiah(getUnitPrice(unit, activePriceTier)) }}
-                                        </p>
+                                        </span>
                                     </div>
-                                    <div class="flex items-center gap-1.5 bg-white border border-amber-300 rounded-xl p-1 shadow-2xs shrink-0">
+
+                                    <!-- Baris 2: Stepper Lebar Ergonomis -->
+                                    <div class="flex items-center justify-between bg-white border border-amber-300/90 rounded-lg p-1 shadow-2xs">
                                         <button 
                                             @click.stop="updateUnitQtyInCatalog(product, unit, -1)" 
-                                            :class="isFewSearchResults ? 'w-8 h-8 sm:w-9 sm:h-9' : 'w-6 h-6 sm:w-7 sm:h-7'"
-                                            class="rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 flex items-center justify-center active:scale-75 transition cursor-pointer"
+                                            :class="isFewSearchResults ? 'h-8 px-3' : 'h-6.5 px-2.5'"
+                                            class="rounded-md bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 flex items-center justify-center active:scale-90 transition cursor-pointer"
                                             title="Kurangi"
                                         >
                                             <Minus :class="isFewSearchResults ? 'w-4 h-4' : 'w-3.5 h-3.5'" />
                                         </button>
-                                        <span :class="isFewSearchResults ? 'w-8 text-sm sm:text-base' : 'w-6 text-xs'" class="text-center font-black text-slate-900">
-                                            {{ getItemQtyInCart(product.id, unit.id, activePriceTier) }}
-                                        </span>
+                                        <div class="flex items-center gap-1 font-black text-slate-900">
+                                            <span :class="isFewSearchResults ? 'text-sm' : 'text-xs'">
+                                                {{ getItemQtyInCart(product.id, unit.id, activePriceTier) }}
+                                            </span>
+                                            <span class="text-[10px] text-slate-400 font-bold uppercase">
+                                                {{ unit.unit_name }}
+                                            </span>
+                                        </div>
                                         <button 
                                             @click.stop="updateUnitQtyInCatalog(product, unit, 1)" 
-                                            :class="isFewSearchResults ? 'w-8 h-8 sm:w-9 sm:h-9' : 'w-6 h-6 sm:w-7 sm:h-7'"
-                                            class="rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center active:scale-75 transition cursor-pointer shadow-xs font-black"
+                                            :class="isFewSearchResults ? 'h-8 px-3' : 'h-6.5 px-2.5'"
+                                            class="rounded-md bg-amber-500 text-slate-950 flex items-center justify-center active:scale-90 transition cursor-pointer shadow-xs font-black"
                                             title="Tambah"
                                         >
                                             <Plus :class="isFewSearchResults ? 'w-4 h-4 stroke-[3]' : 'w-3.5 h-3.5 stroke-[2.5]'" />
@@ -1697,14 +1754,9 @@ onUnmounted(() => {
                                     ]"
                                     title="Klik untuk tambah ke keranjang"
                                 >
-                                    <div class="flex items-center gap-1.5 min-w-0">
-                                        <span :class="isFewSearchResults ? 'text-sm font-black' : 'text-xs font-bold'" class="truncate">
-                                            {{ unit.unit_name }}
-                                        </span>
-                                        <span v-if="getItemQtyInCart(product.id, unit.id) > 0" class="text-[9px] font-bold px-1 rounded bg-slate-200 text-slate-600 shrink-0">
-                                            ({{ getItemQtyInCart(product.id, unit.id) }} di keranjang)
-                                        </span>
-                                    </div>
+                                    <span :class="isFewSearchResults ? 'text-sm font-black' : 'text-xs font-bold'" class="truncate">
+                                        {{ unit.unit_name }}
+                                    </span>
                                     <div class="flex items-center gap-2 shrink-0">
                                         <span :class="isFewSearchResults ? 'text-base font-black' : 'text-xs sm:text-sm font-black'">
                                             {{ formatRupiah(getUnitPrice(unit, activePriceTier)) }}
@@ -1820,6 +1872,20 @@ onUnmounted(() => {
                             <button @click="removeFromCart(index)" class="text-slate-400 hover:text-rose-600 transition p-1 cursor-pointer">
                                 <Trash2 class="w-3.5 h-3.5" />
                             </button>
+                        </div>
+
+                        <!-- Warning Stok Kosong / Defisit / Melebihi Stok -->
+                        <div v-if="Number(item.product.stock_available ?? 0) <= 0" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold">
+                            <AlertCircle class="w-3 h-3 text-rose-600 shrink-0" />
+                            <span>Stok sistem: {{ item.product.stock_available ?? 0 }} (Penjualan defisit/minus)</span>
+                        </div>
+                        <div v-else-if="Number(item.qty * (item.unit?.conversion_ratio || 1)) > Number(item.product.stock_available ?? 0)" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
+                            <AlertCircle class="w-3 h-3 text-amber-600 shrink-0" />
+                            <span>Qty melebihi stok sedia (Sisa {{ item.product.stock_available }})</span>
+                        </div>
+                        <div v-else-if="Number(item.product.stock_available ?? 0) <= (Number(item.product.min_stock ?? 0) > 0 ? Number(item.product.min_stock) : 5)" class="flex items-center gap-1.5 px-2 py-0.5 text-amber-700 text-[10px] font-medium">
+                            <AlertCircle class="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                            <span>Stok menipis: sisa {{ item.product.stock_available }}</span>
                         </div>
 
                         <!-- Unit Selector & Price -->

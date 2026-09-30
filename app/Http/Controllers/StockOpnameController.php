@@ -19,7 +19,7 @@ class StockOpnameController extends Controller
         $products = Product::with(['category', 'brand', 'units'])->orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
         
-        $opnames = StockOpname::with(['user', 'category', 'items.product.units'])
+        $opnames = StockOpname::with(['user', 'category', 'items.product.units', 'voidedBy'])
             ->latest()
             ->take(100)
             ->get();
@@ -70,7 +70,8 @@ class StockOpnameController extends Controller
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.unit_name' => 'nullable|string',
-            'items.*.qty_system' => 'required|numeric',
+            'items.*.qty_snapshot' => 'required|numeric',  // stok saat mulai opname
+            'items.*.qty_system' => 'required|numeric',    // stok terkini sistem (saat terapkan)
             'items.*.qty_physical' => 'required|numeric|min:0',
             'items.*.qty_difference' => 'required|numeric',
             'items.*.cost_price' => 'nullable|numeric|min:0',
@@ -86,13 +87,15 @@ class StockOpnameController extends Controller
             $totalCostDiff = 0;
 
             foreach ($validated['items'] as $item) {
-                $qtySys = (float)$item['qty_system'];
+                $qtySnapshot = (float)$item['qty_snapshot'];
                 $qtyPhys = (float)$item['qty_physical'];
-                $diff = $qtyPhys - $qtySys;
+                // Selisih dihitung dari SNAPSHOT (bukan stok real-time)
+                // agar aman walau ada transaksi POS berjalan saat opname
+                $diff = $qtyPhys - $qtySnapshot;
                 $costPrice = (float)($item['cost_price'] ?? 0);
                 $costDiff = $diff * $costPrice;
 
-                $totalQtySystem += $qtySys;
+                $totalQtySystem += $qtySnapshot;
                 $totalQtyPhysical += $qtyPhys;
                 $totalQtyDiff += $diff;
                 $totalCostDiff += $costDiff;
@@ -114,42 +117,49 @@ class StockOpnameController extends Controller
                 'total_qty_diff' => $totalQtyDiff,
                 'total_cost_diff' => $totalCostDiff,
                 'status' => 'completed',
+                'is_voided' => false,
                 'notes' => $validated['notes'] ?? null,
             ]);
 
             foreach ($validated['items'] as $item) {
-                $product = Product::find($item['product_id']);
+                $product = Product::lockForUpdate()->find($item['product_id']);
                 if (!$product) continue;
 
-                $qtySys = (float)$item['qty_system'];
+                $qtySnapshot = (float)$item['qty_snapshot'];
                 $qtyPhys = (float)$item['qty_physical'];
-                $diff = $qtyPhys - $qtySys;
+                // Delta berdasarkan snapshot — aman terhadap concurrent POS transactions
+                $delta = $qtyPhys - $qtySnapshot;
                 $costPrice = (float)($item['cost_price'] ?? 0);
-                $subtotalCostDiff = $diff * $costPrice;
+                $subtotalCostDiff = $delta * $costPrice;
 
                 StockOpnameItem::create([
                     'stock_opname_id' => $opname->id,
                     'product_id' => $product->id,
                     'unit_name' => $item['unit_name'] ?? $product->units[0]->unit_name ?? 'Pcs',
-                    'qty_system' => $qtySys,
+                    'qty_snapshot' => $qtySnapshot,          // stok saat mulai opname
+                    'qty_system' => (float)$item['qty_system'], // stok aktual sistem saat terapkan
                     'qty_physical' => $qtyPhys,
-                    'qty_difference' => $diff,
+                    'qty_difference' => $delta,
                     'cost_price_per_unit' => $costPrice,
                     'subtotal_cost_diff' => $subtotalCostDiff,
                     'notes' => $item['notes'] ?? null,
                 ]);
 
-                // Update stok fisik produk jika ada selisih
-                if (abs($diff) > 0.0001) {
-                    $product->stock_physical = $qtyPhys;
+                // Terapkan DELTA ke stok terkini (bukan timpa dengan nilai absolut)
+                // Contoh: snapshot=50, fisik=48 → delta=-2
+                // Jika ada 3 penjualan selama opname: stok_terkini=47
+                // Hasil: 47 + (-2) = 45 ✅  (bukan paksa jadi 48 ✗)
+                if (abs($delta) > 0.0001) {
+                    $newStock = max(0, $product->stock_physical + $delta);
+                    $product->stock_physical = $newStock;
                     $product->save();
 
                     // Catat ke buku mutasi stok
                     StockAdjustment::create([
                         'product_id' => $product->id,
                         'user_id' => $user->id,
-                        'type' => $diff > 0 ? 'in' : 'out',
-                        'qty_change' => $diff,
+                        'type' => $delta > 0 ? 'in' : 'out',
+                        'qty_change' => $delta,
                         'reason' => "Stok Opname {$opname->opname_number}" . (!empty($item['notes']) ? ": {$item['notes']}" : ""),
                     ]);
                 }
@@ -157,7 +167,73 @@ class StockOpnameController extends Controller
 
             return redirect()->route('stock-opnames.index')->with(
                 'success',
-                "Dokumen Stok Opname '{$opname->opname_number}' berhasil diselesaikan & disimpan. Sebanyak {$totalDiff} produk disesuaikan stok fisiknya."
+                "Dokumen Stok Opname '{$opname->opname_number}' berhasil diterapkan. {$totalDiff} produk disesuaikan stok-nya (metode delta-snapshot)."
+            );
+        });
+    }
+
+    /**
+     * Void / Batalkan dokumen opname — balik delta yang sudah diterapkan.
+     * Hanya Admin/Gudang yang bisa void. Kasir tidak bisa.
+     */
+    public function void(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        // Hanya admin dan gudang yang boleh void
+        if (!in_array($user->role, ['admin', 'gudang'])) {
+            return back()->with('error', 'Akses ditolak: Hanya Admin atau Gudang yang dapat membatalkan dokumen Stok Opname.');
+        }
+
+        $validated = $request->validate([
+            'void_reason' => 'required|string|max:500',
+        ]);
+
+        return DB::transaction(function () use ($id, $validated, $user) {
+            $opname = StockOpname::with('items.product')->findOrFail($id);
+
+            if ($opname->is_voided) {
+                return back()->with('error', "Dokumen {$opname->opname_number} sudah pernah dibatalkan sebelumnya.");
+            }
+
+            // Balik delta yang pernah diterapkan
+            $reversedCount = 0;
+            foreach ($opname->items as $item) {
+                $delta = (float)$item->qty_difference; // delta yang pernah diterapkan
+                if (abs($delta) < 0.0001) continue;
+
+                $product = Product::lockForUpdate()->find($item->product_id);
+                if (!$product) continue;
+
+                // Balik: kalau dulu +2, sekarang -2 dan sebaliknya
+                $reverseDelta = -$delta;
+                $newStock = max(0, $product->stock_physical + $reverseDelta);
+                $product->stock_physical = $newStock;
+                $product->save();
+
+                StockAdjustment::create([
+                    'product_id' => $product->id,
+                    'user_id' => $user->id,
+                    'type' => $reverseDelta > 0 ? 'in' : 'out',
+                    'qty_change' => $reverseDelta,
+                    'reason' => "Void/Batal Stok Opname {$opname->opname_number}: {$validated['void_reason']}",
+                ]);
+
+                $reversedCount++;
+            }
+
+            // Tandai dokumen sebagai void
+            $opname->update([
+                'is_voided' => true,
+                'voided_at' => now(),
+                'voided_by' => $user->id,
+                'void_reason' => $validated['void_reason'],
+                'status' => 'voided',
+            ]);
+
+            return back()->with(
+                'success',
+                "Dokumen {$opname->opname_number} berhasil dibatalkan. {$reversedCount} produk stok-nya telah dikembalikan ke kondisi sebelum opname."
             );
         });
     }

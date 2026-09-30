@@ -17,8 +17,7 @@ class PosController extends Controller
     public function index()
     {
         $products = Product::with(['category', 'brand', 'units'])
-            ->where('stock_physical', '>', 0)
-            ->orWhereHas('units')
+            ->whereHas('units')
             ->get();
 
         $recentTransactions = Transaction::with(['cashier', 'employee', 'receivable.employee', 'items.product', 'items.unit'])
@@ -103,8 +102,8 @@ class PosController extends Controller
                     'cost_price'      => $unit->cost_price,
                 ]);
 
-                // Kurangi stok fisik
-                $product->stock_physical = max(0, $product->stock_physical - $baseQty);
+                // Kurangi stok fisik (boleh bernilai minus jika menjual saat stok sistem defisit/kosong)
+                $product->stock_physical = $product->stock_physical - $baseQty;
                 $product->save();
             }
 

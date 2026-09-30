@@ -48,9 +48,19 @@ Route::middleware('auth')->group(function () {
         Route::get('/consignments', [ConsignmentController::class, 'index'])->name('consignments.index');
         Route::post('/consignments/batches', [ConsignmentController::class, 'storeBatch'])->name('consignments.batches.store');
         Route::post('/consignments/batches/{id}/settle', [ConsignmentController::class, 'settleBatch'])->name('consignments.batches.settle');
+        Route::delete('/consignments/batches/{id}', [ConsignmentController::class, 'destroyBatch'])->name('consignments.batches.destroy');
         Route::post('/consignments/consignors', [ConsignmentController::class, 'storeConsignor'])->name('consignments.consignors.store');
         Route::put('/consignments/consignors/{id}', [ConsignmentController::class, 'updateConsignor'])->name('consignments.consignors.update');
         Route::delete('/consignments/consignors/{id}', [ConsignmentController::class, 'destroyConsignor'])->name('consignments.consignors.destroy');
+        // Consignment Products (Katalog Jajan)
+        Route::post('/consignments/products', [ConsignmentController::class, 'storeConsignmentProduct'])->name('consignments.products.store');
+        Route::put('/consignments/products/{id}', [ConsignmentController::class, 'updateConsignmentProduct'])->name('consignments.products.update');
+        Route::delete('/consignments/products/{id}', [ConsignmentController::class, 'destroyConsignmentProduct'])->name('consignments.products.destroy');
+        // Batch Susulan & Merge
+        Route::post('/consignments/batches/{id}/add-items', [ConsignmentController::class, 'addItemsToBatch'])->name('consignments.batches.add-items');
+        Route::post('/consignments/batches/merge', [ConsignmentController::class, 'mergeBatches'])->name('consignments.batches.merge');
+        Route::delete('/consignments/batches/{batchId}/items/{itemId}', [ConsignmentController::class, 'destroyBatchItem'])->name('consignments.batches.items.destroy');
+        Route::put('/consignments/batches/{batchId}/items/{itemId}', [ConsignmentController::class, 'updateBatchItem'])->name('consignments.batches.items.update');
     });
 
     // POS Kasir Kantin
@@ -91,6 +101,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:gudang,kasir')->group(function () {
         Route::get('/stock-opnames', [StockOpnameController::class, 'index'])->name('stock-opnames.index');
         Route::post('/stock-opnames', [StockOpnameController::class, 'store'])->name('stock-opnames.store');
+        Route::post('/stock-opnames/{id}/void', [StockOpnameController::class, 'void'])->name('stock-opnames.void');
     });
 
     // Penyesuaian / Edit Stok Fisik (Hanya Gudang & Admin - Kasir Tetap Dilarang)
