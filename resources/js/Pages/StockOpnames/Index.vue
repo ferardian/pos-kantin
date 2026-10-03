@@ -11,12 +11,18 @@ import {
 } from 'lucide-vue-next';
 
 const props = defineProps({
-    products: Array,
-    categories: Array,
-    opnames: Array,
-    stockLogs: Array,
-    autoOpnameNumber: String,
-    currentUser: Object,
+    products: { type: Array, default: () => [] },
+    categories: { type: Array, default: () => [] },
+    opnames: { type: [Array, Object], default: () => [] },
+    stockLogs: { type: Array, default: () => [] },
+    autoOpnameNumber: { type: String, default: "" },
+    currentUser: { type: Object, default: () => ({}) },
+    allowCashierOpname: { type: Boolean, default: false },
+});
+
+const opnameList = computed(() => {
+    if (Array.isArray(props.opnames)) return props.opnames;
+    return props.opnames?.data || [];
 });
 
 const page = usePage();
@@ -41,21 +47,35 @@ const auditInputs = ref({});
 // Ini adalah "titik awal" yang digunakan untuk menghitung delta secara aman
 const stockSnapshot = ref({});
 
-// Inisialisasi input fisik dari props.products
+// Inisialisasi input fisik dari props.products — default KOSONG (null) agar blind opname
 const initAuditInputs = (matchWithSystem = false) => {
     props.products.forEach(p => {
         const sys = Number(p.stock_physical || 0);
         auditInputs.value[p.id] = {
-            physical: matchWithSystem ? sys : sys,
+            physical: matchWithSystem ? sys : null,
             notes: '',
         };
-        // Snapshot hanya diset SEKALI saat pertama kali (tidak dioverwrite saat prop berubah)
+        // Snapshot hanya diset SEKALI saat pertama kali
         if (stockSnapshot.value[p.id] === undefined) {
             stockSnapshot.value[p.id] = sys;
         }
     });
 };
-initAuditInputs(true);
+initAuditInputs(false); // Default KOSONG (petugas input sendiri)
+
+// Cek apakah produk sudah dihitung fisiknya oleh petugas
+const isProductCounted = (productId) => {
+    const val = auditInputs.value[productId]?.physical;
+    return val !== undefined && val !== null && val !== '' && !isNaN(Number(val));
+};
+
+// Helper kalkulasi selisih per produk (berdasarkan snapshot)
+const getProductDiff = (product) => {
+    if (!isProductCounted(product.id)) return null;
+    const inputVal = Number(auditInputs.value[product.id].physical);
+    const baseVal = Number(stockSnapshot.value[product.id] ?? product.stock_physical ?? 0);
+    return inputVal - baseVal;
+};
 
 // Sinkronisasi ulang jika produk berubah — JANGAN timpa snapshot
 watch(() => props.products, () => {
@@ -94,18 +114,11 @@ const filteredProducts = computed(() => {
     });
 });
 
-// Helper kalkulasi selisih per produk (berdasarkan snapshot)
-const getProductDiff = (product) => {
-    const inputVal = auditInputs.value[product.id]?.physical;
-    // Gunakan snapshot sebagai baseline agar konsisten walau ada transaksi berjalan
-    const baseVal = Number(stockSnapshot.value[product.id] ?? product.stock_physical ?? 0);
-    if (inputVal === undefined || inputVal === null || inputVal === '') return 0;
-    return Number(inputVal) - baseVal;
-};
+
 
 // Ringkasan Statistik Audit Lembar Kerja
 const auditSummary = computed(() => {
-    let totalChecked = 0;
+    let totalCounted = 0;
     let matchCount = 0;
     let surplusCount = 0;
     let lossCount = 0;
@@ -113,24 +126,28 @@ const auditSummary = computed(() => {
     let totalCostDiff = 0;
 
     props.products.forEach(p => {
-        totalChecked++;
-        const diff = getProductDiff(p);
-        const cost = Number(p.units?.[0]?.cost_price || 0);
+        if (isProductCounted(p.id)) {
+            totalCounted++;
+            const diff = getProductDiff(p);
+            const cost = Number(p.units?.[0]?.cost_price || 0);
 
-        totalQtyDiff += diff;
-        totalCostDiff += (diff * cost);
+            totalQtyDiff += diff;
+            totalCostDiff += (diff * cost);
 
-        if (Math.abs(diff) < 0.0001) {
-            matchCount++;
-        } else if (diff > 0) {
-            surplusCount++;
-        } else {
-            lossCount++;
+            if (Math.abs(diff) < 0.0001) {
+                matchCount++;
+            } else if (diff > 0) {
+                surplusCount++;
+            } else {
+                lossCount++;
+            }
         }
     });
 
     return {
-        totalChecked,
+        totalProducts: props.products.length,
+        totalChecked: totalCounted,
+        uncountedCount: props.products.length - totalCounted,
         matchCount,
         surplusCount,
         lossCount,
@@ -143,9 +160,35 @@ const auditSummary = computed(() => {
 // Aksi Cepat Samakan Fisik = Sistem untuk produk yang sedang difilter
 const matchFilteredToSystem = () => {
     filteredProducts.value.forEach(p => {
-        if (!auditInputs.value[p.id]) auditInputs.value[p.id] = { physical: 0, notes: '' };
+        if (!auditInputs.value[p.id]) auditInputs.value[p.id] = { physical: null, notes: '' };
         auditInputs.value[p.id].physical = Number(p.stock_physical || 0);
     });
+};
+
+// Aksi Cepat Kosongkan Input Fisik
+const clearFilteredInputs = () => {
+    filteredProducts.value.forEach(p => {
+        if (!auditInputs.value[p.id]) auditInputs.value[p.id] = { physical: null, notes: '' };
+        auditInputs.value[p.id].physical = null;
+    });
+};
+
+// Cakupan Simpan Sesi SO: default 'counted_only'
+const saveScope = ref('counted_only'); // 'counted_only', 'diff_only', 'active_filter'
+
+const getTargetProductsForSubmit = () => {
+    const counted = props.products.filter(p => isProductCounted(p.id));
+
+    if (saveScope.value === 'diff_only') {
+        return counted.filter(p => {
+            const diff = getProductDiff(p);
+            return diff !== null && Math.abs(diff) > 0.0001;
+        });
+    }
+    if (saveScope.value === 'active_filter') {
+        return filteredProducts.value.filter(p => isProductCounted(p.id));
+    }
+    return counted;
 };
 
 // Modal Konfirmasi Simpan SO
@@ -155,7 +198,33 @@ const openConfirmModal = () => {
     isConfirmModalOpen.value = true;
 };
 
-// State Void Dokumen Opname
+// State Void Satuan per Item
+const isVoidItemModalOpen = ref(false);
+const voidTargetItem = ref(null);
+const voidItemForm = useForm({ void_reason: '' });
+
+const openVoidItemModal = (item) => {
+    voidTargetItem.value = item;
+    voidItemForm.void_reason = '';
+    isVoidItemModalOpen.value = true;
+};
+
+const submitVoidItem = () => {
+    if (!voidItemForm.void_reason.trim() || !voidTargetItem.value) return;
+    voidItemForm.post(`/stock-opnames/items/${voidTargetItem.value.id}/void`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            isVoidItemModalOpen.value = false;
+            if (voidTargetItem.value) {
+                voidTargetItem.value.is_voided = true;
+                voidTargetItem.value.void_reason = voidItemForm.void_reason;
+            }
+            voidTargetItem.value = null;
+        },
+    });
+};
+
+// State Void Dokumen Opname Utuh
 const isVoidModalOpen = ref(false);
 const voidTargetOpname = ref(null);
 const voidForm = useForm({ void_reason: '' });
@@ -178,15 +247,16 @@ const submitVoid = () => {
 
 // Submit Sesi Stok Opname
 const submitStockOpname = () => {
+    const targetProducts = getTargetProductsForSubmit();
+    if (!targetProducts || targetProducts.length === 0) {
+        alert('Tidak ada produk yang dipilih atau memiliki selisih fisik untuk disimpan.');
+        return;
+    }
+
     form.category_id = selectedCategoryFilter.value === 'all' ? null : Number(selectedCategoryFilter.value);
     
-    // Siapkan items payload
-    // qty_snapshot = stok saat form dibuka (tidak berubah walau ada transaksi POS berjalan)
-    // qty_system   = stok aktual sistem saat ini (saat tombol "Terapkan" ditekan)
-    // qty_physical = hasil hitung fisik oleh petugas
-    // qty_difference = fisik - snapshot (BUKAN fisik - sistem terkini)
-    //   → ini yang diterapkan sebagai delta ke stok, aman dari race condition
-    form.items = props.products.map(p => {
+    // Siapkan items payload hanya untuk targetProducts (bisa parsial / per kategori / per selisih)
+    form.items = targetProducts.map(p => {
         const snapshot = Number(stockSnapshot.value[p.id] ?? p.stock_physical ?? 0);
         const sys = Number(p.stock_physical || 0); // stok terkini saat terapkan
         const phys = Number(auditInputs.value[p.id]?.physical ?? snapshot);
@@ -260,7 +330,7 @@ const printBap = (opname) => {
         return;
     }
 
-    const diffItems = opname.items.filter(it => Math.abs(Number(it.qty_difference)) > 0.0001);
+    const diffItems = opname.items.filter(it => !it.is_voided && Math.abs(Number(it.qty_difference)) > 0.0001);
 
     const rowsHtml = diffItems.length > 0 
         ? diffItems.map((it, idx) => `
@@ -434,7 +504,7 @@ const printBap = (opname) => {
                         <FileText class="w-4 h-4 text-sky-600" />
                         <span>Riwayat Dokumen SO</span>
                         <span class="ml-1 px-1.5 py-0.2 rounded-md bg-slate-200 text-slate-800 text-[10px]">
-                            {{ opnames.length }}
+                            {{ props.opnames?.total || opnameList.length }}
                         </span>
                     </button>
                     <button 
@@ -574,6 +644,16 @@ const printBap = (opname) => {
 
                             <button 
                                 type="button" 
+                                @click="clearFilteredInputs"
+                                class="px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-rose-50 text-rose-700 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                                title="Kosongkan kembali input fisik untuk barang yang ditampilkan"
+                            >
+                                <RotateCcw class="w-3.5 h-3.5 text-rose-600" />
+                                <span>Kosongkan Input</span>
+                            </button>
+
+                            <button 
+                                type="button" 
                                 @click="openConfirmModal"
                                 class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs flex items-center gap-2 transition shadow-md cursor-pointer active:scale-95"
                             >
@@ -637,7 +717,7 @@ const printBap = (opname) => {
                                         </div>
                                     </td>
 
-                                    <!-- Input Hitungan Fisik Nyata -->
+                                    <!-- Input Hitungan Fisik Nyata (Default Kosong) -->
                                     <td class="py-3.5 px-4 text-center">
                                         <div class="flex items-center justify-center gap-1.5">
                                             <input 
@@ -646,10 +726,12 @@ const printBap = (opname) => {
                                                 type="number" 
                                                 step="0.1" 
                                                 min="0"
+                                                placeholder="Isi fisik..."
                                                 class="w-24 text-center font-black text-xs py-1.5 px-2 bg-white border-2 rounded-xl focus:outline-none transition shadow-xs"
                                                 :class="[
-                                                    getProductDiff(product) === 0 ? 'border-slate-200 text-slate-900 focus:border-amber-500' :
-                                                    (getProductDiff(product) > 0 ? 'border-emerald-500 text-emerald-800 bg-emerald-50/50' : 'border-rose-500 text-rose-800 bg-rose-50/50')
+                                                    !isProductCounted(product.id) ? 'border-slate-200 text-slate-400 placeholder-slate-300 focus:border-amber-500' :
+                                                    (getProductDiff(product) === 0 ? 'border-emerald-400 text-emerald-900 bg-emerald-50/40' :
+                                                    (getProductDiff(product) > 0 ? 'border-sky-500 text-sky-800 bg-sky-50/50' : 'border-rose-500 text-rose-800 bg-rose-50/50'))
                                                 ]"
                                             />
                                             <span class="text-[11px] text-slate-500 font-semibold">
@@ -660,7 +742,11 @@ const printBap = (opname) => {
 
                                     <!-- Selisih (+/-) -->
                                     <td class="py-3.5 px-4 text-center font-mono font-black">
+                                        <span v-if="!isProductCounted(product.id)" class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-400 border border-slate-200">
+                                            Belum Diisi
+                                        </span>
                                         <span 
+                                            v-else
                                             class="inline-flex items-center gap-0.5 px-2.5 py-1 rounded-xl text-xs"
                                             :class="[
                                                 getProductDiff(product) === 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
@@ -674,7 +760,8 @@ const printBap = (opname) => {
 
                                     <!-- Estimasi Nilai Rupiah Selisih HPP -->
                                     <td class="py-3.5 px-4 text-right font-mono font-bold text-xs">
-                                        <span :class="getProductDiff(product) < 0 ? 'text-rose-600' : (getProductDiff(product) > 0 ? 'text-emerald-600' : 'text-slate-400')">
+                                        <span v-if="!isProductCounted(product.id)" class="text-slate-300">-</span>
+                                        <span v-else :class="getProductDiff(product) < 0 ? 'text-rose-600' : (getProductDiff(product) > 0 ? 'text-emerald-600' : 'text-slate-400')">
                                             {{ formatRupiah(getProductDiff(product) * Number(product.units?.[0]?.cost_price || 0)) }}
                                         </span>
                                     </td>
@@ -726,7 +813,7 @@ const printBap = (opname) => {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                <tr v-for="op in opnames" :key="op.id" class="hover:bg-slate-50 transition">
+                                <tr v-for="op in opnameList" :key="op.id" class="hover:bg-slate-50 transition">
                                     <td class="p-3.5 font-mono font-bold text-slate-900">{{ op.opname_number }}</td>
                                     <td class="p-3.5 font-bold text-slate-700">{{ formatDate(op.opname_date) }}</td>
                                     <td class="p-3.5">
@@ -782,7 +869,7 @@ const printBap = (opname) => {
                                     </td>
                                 </tr>
 
-                                <tr v-if="opnames.length === 0">
+                                <tr v-if="opnameList.length === 0">
                                     <td colspan="8" class="p-12 text-center text-slate-400">
                                         Belum ada riwayat pelaksanaan Stok Opname yang tersimpan.
                                     </td>
@@ -816,7 +903,7 @@ const printBap = (opname) => {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                <tr v-for="log in stockLogs" :key="log.id" class="hover:bg-slate-50 transition">
+                                <tr v-for="log in (stockLogs || [])" :key="log.id" class="hover:bg-slate-50 transition">
                                     <td class="p-3 font-mono text-slate-600">{{ formatDateTime(log.created_at) }}</td>
                                     <td class="p-3 font-bold text-slate-900">{{ log.product?.name || '-' }}</td>
                                     <td class="p-3 font-bold">
@@ -837,7 +924,7 @@ const printBap = (opname) => {
                                     <td class="p-3 font-semibold text-slate-800">{{ log.user?.name || '-' }}</td>
                                 </tr>
 
-                                <tr v-if="stockLogs.length === 0">
+                                <tr v-if="!stockLogs || stockLogs.length === 0">
                                     <td colspan="6" class="p-8 text-center text-slate-400">
                                         Belum ada riwayat mutasi stok.
                                     </td>
@@ -866,6 +953,34 @@ const printBap = (opname) => {
                     <p class="text-xs text-slate-600 leading-relaxed">
                         Anda akan menerapkan hasil hitung fisik ke stok sistem dan membuat dokumen Berita Acara <strong>{{ form.opname_number }}</strong>.
                     </p>
+
+                    <!-- Pemilihan Cakupan Simpan Produk -->
+                    <div>
+                        <label class="block text-slate-800 font-bold mb-1.5 text-xs">Cakupan Produk yang Disimpan ke Dokumen:</label>
+                        <div class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs">
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="radio" v-model="saveScope" value="counted_only" class="mt-0.5 text-amber-500 focus:ring-amber-400" />
+                                <div>
+                                    <span class="font-bold text-slate-900">Hanya Produk yang Sudah Dihitung ({{ auditSummary.totalChecked }} Produk)</span>
+                                    <p class="text-[11px] text-slate-500">Hanya memproses barang yang kolom fisiknya telah diisi oleh petugas. Produk lain tidak disentuh.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="radio" v-model="saveScope" value="diff_only" class="mt-0.5 text-amber-500 focus:ring-amber-400" />
+                                <div>
+                                    <span class="font-bold text-slate-900">Hanya Produk yang Ada Selisih Fisik ({{ auditSummary.diffCount }} Produk)</span>
+                                    <p class="text-[11px] text-slate-500">Hanya mencatat barang yang mengalami koreksi/perubahan stok.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="radio" v-model="saveScope" value="active_filter" class="mt-0.5 text-amber-500 focus:ring-amber-400" />
+                                <div>
+                                    <span class="font-bold text-slate-900">Produk Terhitung dalam Filter Aktif ({{ filteredProducts.filter(p => isProductCounted(p.id)).length }} Produk)</span>
+                                    <p class="text-[11px] text-slate-500">Khusus barang yang dihitung dalam kategori/pencarian yang sedang tampil.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-2xl text-xs">
                         <div>
@@ -975,13 +1090,14 @@ const printBap = (opname) => {
                                             <th class="p-2.5 text-center w-24">Selisih</th>
                                             <th class="p-2.5 text-right w-28">Subtotal HPP</th>
                                             <th class="p-2.5">Alasan / Catatan</th>
+                                            <th class="p-2.5 text-center w-28">Status / Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
                                         <tr 
                                             v-for="(it, idx) in selectedOpname.items" 
                                             :key="it.id"
-                                            :class="Math.abs(Number(it.qty_difference)) > 0.0001 ? 'bg-amber-50/40' : ''"
+                                            :class="it.is_voided ? 'bg-rose-50/30 opacity-60' : (Math.abs(Number(it.qty_difference)) > 0.0001 ? 'bg-amber-50/40' : '')"
                                         >
                                             <td class="p-2.5 text-center text-slate-400 font-mono">{{ idx + 1 }}</td>
                                             <td class="p-2.5 font-bold text-slate-900">{{ it.product?.name || '-' }}</td>
@@ -992,10 +1108,30 @@ const printBap = (opname) => {
                                                     {{ Number(it.qty_difference) > 0 ? '+' : '' }}{{ it.qty_difference }}
                                                 </span>
                                             </td>
-                                            <td class="p-2.5 text-right font-mono font-bold" :class="Number(it.subtotal_cost_diff) < 0 ? 'text-rose-600' : 'text-slate-800'">
+                                            <td class="p-2.5 text-right font-mono font-bold" :class="it.is_voided ? 'line-through text-slate-400' : (Number(it.subtotal_cost_diff) < 0 ? 'text-rose-600' : 'text-slate-800')">
                                                 {{ formatRupiah(it.subtotal_cost_diff) }}
                                             </td>
-                                            <td class="p-2.5 text-slate-600 italic">{{ it.notes || '-' }}</td>
+                                            <td class="p-2.5 text-slate-600 italic">
+                                                <span>{{ it.notes || '-' }}</span>
+                                                <span v-if="it.is_voided && it.void_reason" class="block text-[10px] text-rose-500 font-bold not-italic mt-0.5">
+                                                    Alasan Void: {{ it.void_reason }}
+                                                </span>
+                                            </td>
+                                            <td class="p-2.5 text-center">
+                                                <span v-if="it.is_voided" class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold text-[10px] inline-flex items-center gap-1">
+                                                    Dibatalkan
+                                                </span>
+                                                <button 
+                                                    v-else-if="!selectedOpname.is_voided && Math.abs(Number(it.qty_difference)) > 0.0001 && ['admin', 'gudang'].includes(currentUser?.role)"
+                                                    type="button"
+                                                    @click="openVoidItemModal(it)"
+                                                    class="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] transition cursor-pointer border border-rose-200"
+                                                    title="Batalkan koreksi khusus item ini saja"
+                                                >
+                                                    Batal Item
+                                                </button>
+                                                <span v-else class="text-slate-400 text-[10px]">-</span>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -1019,6 +1155,59 @@ const printBap = (opname) => {
                             class="px-5 py-2 bg-slate-900 text-white font-bold rounded-xl text-xs cursor-pointer"
                         >
                             Tutup
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL: Konfirmasi Void Item Tertentu Saja -->
+            <div v-if="isVoidItemModalOpen && voidTargetItem" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white border border-slate-200 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0">
+                            <RotateCcw class="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900">Batalkan Koreksi Item Ini Saja</h3>
+                            <p class="text-xs text-rose-600 font-bold truncate max-w-xs">{{ voidTargetItem.product?.name }}</p>
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-800 space-y-1">
+                            <p class="font-black">ℹ️ Penyesuaian stok yang akan dibalik:</p>
+                            <p>Stok produk akan dikembalikan sebesar <strong>{{ Number(voidTargetItem.qty_difference) > 0 ? '-' : '+' }}{{ Math.abs(Number(voidTargetItem.qty_difference)) }} {{ voidTargetItem.unit_name }}</strong>.</p>
+                            <p class="text-[11px] text-slate-600 font-medium pt-1">✅ Item-item lain dalam dokumen ini <strong>tetap sah dan tidak terganggu</strong>.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                Alasan Pembatalan Item <span class="text-rose-500">*</span>
+                            </label>
+                            <textarea
+                                v-model="voidItemForm.void_reason"
+                                rows="3"
+                                placeholder="Contoh: Salah ketik hitungan fisik di etalase, fisik sebenarnya 30 bukan 25..."
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-rose-500 focus:bg-white transition resize-none"
+                            />
+                            <p v-if="voidItemForm.errors?.void_reason" class="text-rose-500 text-xs mt-1">{{ voidItemForm.errors.void_reason }}</p>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex items-center justify-end gap-2">
+                        <button
+                            type="button"
+                            @click="isVoidItemModalOpen = false"
+                            class="px-5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 transition cursor-pointer"
+                            :disabled="voidItemForm.processing"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            @click="submitVoidItem"
+                            :disabled="!voidItemForm.void_reason.trim() || voidItemForm.processing"
+                            class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                            <RotateCcw class="w-3.5 h-3.5" />
+                            <span>{{ voidItemForm.processing ? 'Memproses...' : 'Ya, Batalkan Item Ini' }}</span>
                         </button>
                     </div>
                 </div>

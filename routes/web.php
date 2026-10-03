@@ -102,6 +102,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/stock-opnames', [StockOpnameController::class, 'index'])->name('stock-opnames.index');
         Route::post('/stock-opnames', [StockOpnameController::class, 'store'])->name('stock-opnames.store');
         Route::post('/stock-opnames/{id}/void', [StockOpnameController::class, 'void'])->name('stock-opnames.void');
+        Route::post('/stock-opnames/items/{id}/void', [StockOpnameController::class, 'voidItem'])->name('stock-opnames.items.void');
     });
 
     // Penyesuaian / Edit Stok Fisik (Hanya Gudang & Admin - Kasir Tetap Dilarang)

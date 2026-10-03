@@ -18,6 +18,8 @@ class StockOpnameItem extends Model
         'qty_difference' => 'float',
         'cost_price_per_unit' => 'float',
         'subtotal_cost_diff' => 'float',
+        'is_voided' => 'boolean',
+        'voided_at' => 'datetime',
     ];
 
     public function stockOpname()

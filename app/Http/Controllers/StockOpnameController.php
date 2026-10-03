@@ -30,8 +30,9 @@ class StockOpnameController extends Controller
             }
         }
 
-        // Ambil produk aktif beserta unit, kategori, dan lokasi
+        // Ambil produk aktif yang melacak stok fisik (bukan pulsa/jasa/digital)
         $products = Product::with(['units', 'category', 'productLocations.location'])
+            ->where('track_stock', true)
             ->orderBy('name', 'asc')
             ->get();
 

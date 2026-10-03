@@ -15,6 +15,7 @@ class TransactionItem extends Model
         'unit_price',
         'subtotal',
         'cost_price',
+        'notes',
     ];
 
     protected $casts = [

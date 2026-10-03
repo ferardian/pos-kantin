@@ -13,6 +13,7 @@ class Product extends Model
         'category_id',
         'brand_id',
         'min_stock',
+        'track_stock',
         'stock_physical',
         'stock_booked',
         'specifications',
@@ -27,6 +28,7 @@ class Product extends Model
         'stock_physical' => 'decimal:2',
         'stock_booked' => 'decimal:2',
         'is_consignment' => 'boolean',
+        'track_stock' => 'boolean',
     ];
 
     protected $appends = ['stock_available'];

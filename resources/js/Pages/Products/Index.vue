@@ -66,6 +66,7 @@ const addProductForm = useForm({
     category_id: null,
     brand_id: null,
     min_stock: 0,
+    track_stock: true,
     stock_physical: 0,
     description: '',
     units: [
@@ -205,6 +206,7 @@ const editProductForm = useForm({
     category_id: null,
     brand_id: null,
     min_stock: 5,
+    track_stock: true,
     description: '',
     units: [],
 });
@@ -302,6 +304,7 @@ const openEditModal = (product) => {
     editProductForm.category_id = product.category_id;
     editProductForm.brand_id = product.brand_id;
     editProductForm.min_stock = product.min_stock;
+    editProductForm.track_stock = product.track_stock !== false;
     editProductForm.description = product.description || '';
     editProductForm.units = product.units.map(u => ({
         id: u.id,
@@ -640,6 +643,7 @@ const stockFilter = ref('all');
 
 const lowStockCount = computed(() => {
     return props.products.filter(p => {
+        if (p.track_stock === false) return false;
         const avail = Number(p.stock_available ?? 0);
         const min = Number(p.min_stock ?? 0);
         const threshold = min > 0 ? min : 5;
@@ -648,10 +652,20 @@ const lowStockCount = computed(() => {
 });
 
 const emptyDeficitCount = computed(() => {
-    return props.products.filter(p => Number(p.stock_available ?? 0) <= 0).length;
+    return props.products.filter(p => {
+        if (p.track_stock === false) return false;
+        return Number(p.stock_available ?? 0) <= 0;
+    }).length;
 });
 
 const getProductStockBadge = (product) => {
+    if (product.track_stock === false) {
+        return {
+            text: 'Non-Stok / Digital',
+            badgeClass: 'text-indigo-700 bg-indigo-50 border border-indigo-200 font-extrabold',
+            title: 'Produk pulsa / token / non-fisik (tanpa batasan stok fisik)'
+        };
+    }
     const avail = Number(product.stock_available ?? 0);
     const min = Number(product.min_stock ?? 0);
     const threshold = min > 0 ? min : 5;
@@ -697,12 +711,14 @@ const filteredProducts = computed(() => {
         if (!matchesCategory || !matchesSearch) return false;
 
         if (stockFilter.value === 'low') {
+            if (p.track_stock === false) return false;
             const avail = Number(p.stock_available ?? 0);
             const min = Number(p.min_stock ?? 0);
             const threshold = min > 0 ? min : 5;
             return avail > 0 && avail <= threshold;
         }
         if (stockFilter.value === 'empty_deficit') {
+            if (p.track_stock === false) return false;
             const avail = Number(p.stock_available ?? 0);
             return avail <= 0;
         }
@@ -1564,14 +1580,18 @@ const submitNewUnit = () => {
                                                 :title="getProductStockBadge(product).title"
                                                 class="px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1 shadow-2xs"
                                             >
-                                                <AlertCircle v-if="Number(product.stock_available ?? 0) <= (Number(product.min_stock ?? 0) > 0 ? Number(product.min_stock) : 5)" class="w-3 h-3 shrink-0" />
+                                                <Sparkles v-if="product.track_stock === false" class="w-3 h-3 text-indigo-500 shrink-0" />
+                                                <AlertCircle v-else-if="Number(product.stock_available ?? 0) <= (Number(product.min_stock ?? 0) > 0 ? Number(product.min_stock) : 5)" class="w-3 h-3 shrink-0" />
                                                 {{ getProductStockBadge(product).text }}
                                             </span>
-                                            <div class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5">
+                                            <div v-if="product.track_stock !== false" class="text-[10px] text-slate-500 font-medium flex items-center gap-1.5">
                                                 <span>Fisik: <strong>{{ product.stock_physical }}</strong></span>
                                                 <span v-if="product.stock_booked > 0" class="text-amber-600 font-bold">
                                                     (Booked: {{ product.stock_booked }})
                                                 </span>
+                                            </div>
+                                            <div v-else class="text-[10px] text-indigo-500 font-medium">
+                                                Tanpa Batas Stok
                                             </div>
                                         </div>
                                     </td>
@@ -2278,9 +2298,28 @@ const submitNewUnit = () => {
                         </div>
                     </div>
 
+                    <!-- Tipe Inventori: Lacak Stok Fisik vs Pulsa/Jasa -->
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+                        <div>
+                            <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                                <span>Lacak Stok Fisik</span>
+                                <span v-if="!addProductForm.track_stock" class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-800">
+                                    Pulsa / Jasa / Digital
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                Nonaktifkan jika produk berupa Pulsa, Token Listrik, atau Jasa yang tidak memerlukan stok fisik inventori.
+                            </p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" v-model="addProductForm.track_stock" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
+
                     <div>
                         <label class="block text-slate-600 font-bold mb-1">Nama Barang Lengkap</label>
-                        <input v-model="addProductForm.name" required placeholder="Contoh: Nasi Rames Ayam / Air Mineral 600ml / Susu Formula Bayi" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold text-sm" />
+                        <input v-model="addProductForm.name" required placeholder="Contoh: Pulsa Telkomsel 50k / Token PLN 100k / Nasi Rames" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold text-sm" />
                     </div>
 
                     <!-- Searchable Combobox for Kategori & Merk -->
@@ -2673,6 +2712,25 @@ const submitNewUnit = () => {
                                 class="w-full h-9 bg-slate-50 border border-slate-200 rounded-xl px-3 text-slate-900 font-bold focus:outline-none focus:border-amber-500 focus:bg-white transition text-xs" 
                             />
                         </div>
+                    </div>
+
+                    <!-- Tipe Inventori: Lacak Stok Fisik vs Pulsa/Jasa -->
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+                        <div>
+                            <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                                <span>Lacak Stok Fisik</span>
+                                <span v-if="!editProductForm.track_stock" class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-800">
+                                    Pulsa / Jasa / Digital
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                Nonaktifkan jika produk berupa Pulsa, Token Listrik, atau Jasa yang tidak memerlukan stok fisik inventori.
+                            </p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" v-model="editProductForm.track_stock" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
                     </div>
 
                     <div>

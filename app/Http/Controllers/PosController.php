@@ -44,6 +44,7 @@ class PosController extends Controller
             'items.*.qty'             => 'required|numeric|min:0.01',
             'items.*.unit_price'      => 'required|numeric|min:0',
             'items.*.subtotal'        => 'required|numeric|min:0',
+            'items.*.notes'           => 'nullable|string|max:255',
             'total_gross'    => 'required|numeric|min:0',
             'discount'       => 'nullable|numeric|min:0',
             'total_net'      => 'required|numeric|min:0',
@@ -100,11 +101,14 @@ class PosController extends Controller
                     'unit_price'      => $item['unit_price'],
                     'subtotal'        => $item['subtotal'],
                     'cost_price'      => $unit->cost_price,
+                    'notes'           => $item['notes'] ?? null,
                 ]);
 
-                // Kurangi stok fisik (boleh bernilai minus jika menjual saat stok sistem defisit/kosong)
-                $product->stock_physical = $product->stock_physical - $baseQty;
-                $product->save();
+                // Kurangi stok fisik HANYA jika produk melacak stok fisik (bukan pulsa/jasa/digital)
+                if ($product->track_stock) {
+                    $product->stock_physical = $product->stock_physical - $baseQty;
+                    $product->save();
+                }
             }
 
             // Catat ke kas

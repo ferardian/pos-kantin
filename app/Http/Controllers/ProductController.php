@@ -58,6 +58,7 @@ class ProductController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'min_stock' => 'nullable|numeric|min:0',
+            'track_stock' => 'nullable|boolean',
             'stock_physical' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
             'units' => 'required|array|min:1',
@@ -103,6 +104,7 @@ class ProductController extends Controller
                 'category_id' => $validated['category_id'] ?? null,
                 'brand_id' => $validated['brand_id'] ?? null,
                 'min_stock' => $validated['min_stock'] ?? 0,
+                'track_stock' => $request->has('track_stock') ? $request->boolean('track_stock') : true,
                 'stock_physical' => $stockPhysical,
                 'stock_booked' => 0,
                 'description' => $validated['description'] ?? null,
@@ -153,6 +155,7 @@ class ProductController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'min_stock' => 'required|numeric|min:0',
+            'track_stock' => 'nullable|boolean',
             'description' => 'nullable|string',
             'units' => 'required|array|min:1',
             'units.*.id' => 'nullable|integer',
@@ -172,6 +175,7 @@ class ProductController extends Controller
                 'category_id' => $validated['category_id'] ?? null,
                 'brand_id' => $validated['brand_id'] ?? null,
                 'min_stock' => $validated['min_stock'],
+                'track_stock' => $request->has('track_stock') ? $request->boolean('track_stock') : true,
                 'description' => $validated['description'] ?? null,
             ]);
 

@@ -204,6 +204,14 @@ const getTierBadgeClass = (tier) => {
 };
 
 const getStockStatus = (product) => {
+    if (product.track_stock === false) {
+        return {
+            type: 'digital',
+            isWarning: false,
+            label: 'Non-Stok / Pulsa',
+            badgeClass: 'text-indigo-700 bg-indigo-50 border border-indigo-200 font-extrabold'
+        };
+    }
     const avail = Number(product.stock_available ?? 0);
     const min = Number(product.min_stock ?? 0);
     const threshold = min > 0 ? min : 5;
@@ -259,6 +267,7 @@ const addToCart = (product, specificUnit = null, specificTier = null) => {
             qty: 1,
             unit_price: price,
             subtotal: price,
+            notes: '',
         });
     }
 
@@ -502,6 +511,7 @@ const openCheckout = () => {
         unit_price: i.unit_price,
         tier: i.tier,
         subtotal: i.subtotal,
+        notes: i.notes || null,
     }));
     const hasEmployeeItem = cart.value.some(i => i.tier === 'karyawan');
     const isKaryawan = activePriceTier.value === 'karyawan' || hasEmployeeItem || !!selectedEmployeeId.value;
@@ -625,6 +635,15 @@ const submitCheckout = () => {
             return;
         }
     }
+    checkoutForm.items = cart.value.map(i => ({
+        product_id: i.product.id,
+        product_unit_id: i.unit.id,
+        qty: i.qty,
+        unit_price: i.unit_price,
+        tier: i.tier,
+        subtotal: i.subtotal,
+        notes: i.notes || null,
+    }));
     const hasEmployeeItem = cart.value.some(i => i.tier === 'karyawan');
     const isKaryawan = activePriceTier.value === 'karyawan' || hasEmployeeItem || !!selectedEmployeeId.value;
     checkoutForm.price_type = isKaryawan ? 'karyawan' : 'umum';
@@ -708,7 +727,8 @@ const buildPrintReceiptHtml = (trx, format, st, user) => {
     if (isThermal) {
         const itemsHtml = items.map(it => `
             <div style="margin-bottom: 3px;">
-                <div style="font-weight: 700; font-size: 7.5pt; color: #000000; line-height: 1.15; word-break: break-word;">${it.product?.name || 'Item'}</div>
+                <div style="font-weight: 700; font-size: 7.5pt; color: #000000; line-height: 1.15; word-break: break-word;">${it.product?.name || it.name || 'Item'}</div>
+                ${it.notes ? `<div style="font-size: 6.8pt; color: #333333; font-style: italic;">No.HP/Ket: ${it.notes}</div>` : ''}
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7pt; color: #000000; margin-top: 1px;">
                     <span>${it.qty} ${it.unit?.unit_name || 'Pcs'} x ${formatRupiah(it.unit_price)}</span>
                     <span style="font-weight: 700; text-align: right; white-space: nowrap;">${formatRupiah(it.subtotal)}</span>
@@ -845,7 +865,10 @@ const buildPrintReceiptHtml = (trx, format, st, user) => {
 
             return `
                 <tr style="border-bottom: 1px dashed #000; font-size: 9.5pt; line-height: 1.25;">
-                    <td style="padding: 3px 4px; text-align: left; font-weight: bold; font-family: 'Courier New', monospace;">${it.product?.name || 'Item'}</td>
+                    <td style="padding: 3px 4px; text-align: left; font-weight: bold; font-family: 'Courier New', monospace;">
+                        ${it.product?.name || it.name || 'Item'}
+                        ${it.notes ? `<div style="font-size: 8pt; font-weight: normal; font-style: italic;">(Ket: ${it.notes})</div>` : ''}
+                    </td>
                     <td style="padding: 3px 4px; text-align: center; white-space: nowrap; font-weight: bold;">${qtyStr}</td>
                     <td style="padding: 3px 4px; text-align: right; white-space: nowrap; font-weight: bold;">${priceStr}</td>
                     <td style="padding: 3px 4px; text-align: right; white-space: nowrap; font-weight: bold;">${discountStr}</td>
@@ -1875,8 +1898,12 @@ onUnmounted(() => {
                             </button>
                         </div>
 
-                        <!-- Warning Stok Kosong / Defisit / Melebihi Stok -->
-                        <div v-if="Number(item.product.stock_available ?? 0) <= 0" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold">
+                        <!-- Warning Stok Kosong / Defisit / Melebihi Stok / Pulsa Digital -->
+                        <div v-if="item.product.track_stock === false" class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-semibold">
+                            <Sparkles class="w-3 h-3 text-indigo-500 shrink-0" />
+                            <span>Produk Pulsa / Digital (Non-Stok)</span>
+                        </div>
+                        <div v-else-if="Number(item.product.stock_available ?? 0) <= 0" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold">
                             <AlertCircle class="w-3 h-3 text-rose-600 shrink-0" />
                             <span>Stok sistem: {{ item.product.stock_available ?? 0 }} (Penjualan defisit/minus)</span>
                         </div>
@@ -1959,6 +1986,16 @@ onUnmounted(() => {
                                     <Plus class="w-3 h-3" />
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- No HP / Catatan Baris Item (Opsional) -->
+                        <div class="pt-1.5 border-t border-slate-100">
+                            <input 
+                                v-model="item.notes"
+                                type="text"
+                                :placeholder="item.product.track_stock === false ? 'No. HP Pembeli / Catatan (Opsional)...' : 'Catatan / Keterangan item (Opsional)...'"
+                                class="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 rounded-lg px-2.5 py-1 text-[11px] text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white transition"
+                            />
                         </div>
                     </div>
                 </div>
@@ -2668,7 +2705,8 @@ onUnmounted(() => {
                             <!-- Items -->
                             <div class="space-y-1.5 border-b border-dashed border-slate-300 pb-2 text-[10px]">
                                 <div v-for="(it, i) in lastTransaction?.items" :key="i" class="space-y-0.5">
-                                    <p class="font-bold text-slate-900">{{ it.product.name }}</p>
+                                    <p class="font-bold text-slate-900">{{ it.product?.name || it.name }}</p>
+                                    <p v-if="it.notes" class="text-[9px] text-slate-500 italic">No.HP/Ket: {{ it.notes }}</p>
                                     <div class="flex justify-between text-slate-700 text-[9px]">
                                         <span>{{ it.qty }} {{ it.unit.unit_name }} x {{ formatRupiah(it.unit_price) }}</span>
                                         <span class="font-bold text-slate-900">{{ formatRupiah(it.subtotal) }}</span>
@@ -2792,7 +2830,10 @@ onUnmounted(() => {
                                 </thead>
                                 <tbody class="divide-y divide-slate-200">
                                     <tr v-for="(it, idx) in lastTransaction?.items" :key="idx">
-                                        <td class="py-1 px-2 font-medium text-slate-900">{{ it.product.name }}</td>
+                                        <td class="py-1 px-2 font-medium text-slate-900">
+                                            <div>{{ it.product?.name || it.name }}</div>
+                                            <div v-if="it.notes" class="text-[10px] text-slate-500 italic">No.HP/Ket: {{ it.notes }}</div>
+                                        </td>
                                         <td class="py-1 px-2 text-center text-slate-800">{{ it.qty }} {{ it.unit.unit_name }}</td>
                                         <td class="py-1 px-2 text-right text-slate-800">{{ formatRupiah(it.unit_price) }}</td>
                                         <td class="py-1 px-2 text-right text-slate-600">{{ it.discount > 0 ? formatRupiah(it.discount) : '-' }}</td>
@@ -2937,7 +2978,10 @@ onUnmounted(() => {
                                     <tbody class="divide-y divide-slate-100">
                                         <tr v-for="(it, idx) in lastTransaction?.items" :key="idx" class="hover:bg-slate-50/50">
                                             <td class="py-3 px-4 text-center font-bold text-slate-400">{{ idx + 1 }}</td>
-                                            <td class="py-3 px-4 font-bold text-slate-900">{{ it.product.name }}</td>
+                                            <td class="py-3 px-4 font-bold text-slate-900">
+                                                <div>{{ it.product?.name || it.name }}</div>
+                                                <div v-if="it.notes" class="text-[10px] text-slate-500 italic">No.HP/Ket: {{ it.notes }}</div>
+                                            </td>
                                             <td class="py-3 px-4 text-center font-black">{{ it.qty }}</td>
                                             <td class="py-3 px-4 text-center text-slate-600 font-semibold">{{ it.unit.unit_name }}</td>
                                             <td class="py-3 px-4 text-right text-slate-700">{{ formatRupiah(it.unit_price) }}</td>
