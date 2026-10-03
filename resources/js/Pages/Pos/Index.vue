@@ -625,14 +625,15 @@ const submitCheckout = () => {
             return;
         }
     }
-    checkoutForm.price_type = priceType.value;
+    const hasEmployeeItem = cart.value.some(i => i.tier === 'karyawan');
+    const isKaryawan = activePriceTier.value === 'karyawan' || hasEmployeeItem || !!selectedEmployeeId.value;
+    checkoutForm.price_type = isKaryawan ? 'karyawan' : 'umum';
     checkoutForm.employee_id = selectedEmployeeId.value || null;
 
     checkoutForm.post('/pos/checkout', {
         onSuccess: () => {
             isCheckoutOpen.value = false;
             isMobileCartOpen.value = false;
-            const isKaryawan = priceType.value === 'karyawan' || !!selectedEmployeeObj.value;
             const finalCustomerName = selectedEmployeeObj.value 
                 ? (selectedEmployeeObj.value.name + (selectedEmployeeObj.value.department ? ` (${selectedEmployeeObj.value.department})` : '')) 
                 : (isKaryawan ? 'Karyawan RSIA' : 'Pelanggan Umum');
