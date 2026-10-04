@@ -3338,7 +3338,7 @@ body {
                                 <div class="text-base font-black text-blue-950 font-mono mt-1">
                                     {{ formatRupiah(shiftSettlementData.qris_total) }}
                                 </div>
-                                <div class="text-[9.5px] text-blue-700 mt-0.5">Masuk Rekening Bank RS</div>
+                                
                             </div>
 
                             <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl">
@@ -3349,7 +3349,7 @@ body {
                                 <div class="text-base font-black text-purple-950 font-mono mt-1">
                                     {{ formatRupiah(shiftSettlementData.transfer_total) }}
                                 </div>
-                                <div class="text-[9.5px] text-purple-700 mt-0.5">Masuk Rekening Koperasi</div>
+                                
                             </div>
 
                             <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl">
@@ -3360,7 +3360,7 @@ body {
                                 <div class="text-base font-black text-amber-950 font-mono mt-1">
                                     {{ formatRupiah(shiftSettlementData.tempo_total) }}
                                 </div>
-                                <div class="text-[9.5px] text-amber-700 mt-0.5">Potong Payroll RSIA</div>
+                                
                             </div>
                         </div>
 

@@ -593,9 +593,7 @@ ${cashierBreakdownA4}
                             "{{ numberToWords(settlement.cash_total) }}"
                         </div>
                     </div>
-                    <div class="mt-4 pt-3 border-t border-emerald-200/80 text-[11px] text-emerald-700 font-medium">
-                        Uang fisik di laci kasir yang disetor ke Keuangan RSIA.
-                    </div>
+
                 </div>
 
                 <!-- Card 2: QRIS Bank -->
@@ -613,13 +611,9 @@ ${cashierBreakdownA4}
                         <div class="mt-3 text-2xl font-black text-slate-900 font-mono tracking-tight">
                             {{ formatRupiah(settlement.qris_total) }}
                         </div>
-                        <div class="mt-1 text-xs text-slate-500">
-                            Masuk rekening Bank Koperasi / RSIA
-                        </div>
+                        
                     </div>
-                    <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-                        Otomatis terekonsiliasi via mutasi bank QRIS.
-                    </div>
+
                 </div>
 
                 <!-- Card 3: Transfer Bank -->
@@ -637,13 +631,9 @@ ${cashierBreakdownA4}
                         <div class="mt-3 text-2xl font-black text-slate-900 font-mono tracking-tight">
                             {{ formatRupiah(settlement.transfer_total) }}
                         </div>
-                        <div class="mt-1 text-xs text-slate-500">
-                            Masuk rekening Koperasi / RSIA
-                        </div>
+                        
                     </div>
-                    <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-                        Bukti transfer diverifikasi bagian administrasi.
-                    </div>
+
                 </div>
 
                 <!-- Card 4: Bon Pegawai RSIA (Tempo) -->
@@ -661,13 +651,9 @@ ${cashierBreakdownA4}
                         <div class="mt-3 text-2xl font-black text-amber-900 font-mono tracking-tight">
                             {{ formatRupiah(settlement.tempo_total) }}
                         </div>
-                        <div class="mt-1 text-xs text-slate-500">
-                            Piutang karyawan RSIA Aisyiyah
-                        </div>
+                        
                     </div>
-                    <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-                        Dipotong saat penggajian payroll bulanan.
-                    </div>
+
                 </div>
 
             </div>
