@@ -2,11 +2,12 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useForm, router, usePage } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
+import { appRoute } from '@/Utils/route';
 import { 
     Search, Barcode, ShoppingCart, Plus, Minus, Trash2, User, 
     CreditCard, DollarSign, QrCode, Clock, Printer, CheckCircle, Check,
     AlertCircle, Tag, Layers, ArrowRight, ArrowLeft, X, Phone, MapPin, Sparkles, ChevronDown,
-    History, RotateCcw, FileText, Tablet, Monitor
+    History, RotateCcw, FileText, Tablet, Monitor, Banknote, Calendar
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -1505,6 +1506,159 @@ onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
     document.removeEventListener('click', handleClickOutsideEmployee);
 });
+
+// Shift Settlement Live Modal State
+const isShiftSettlementOpen = ref(false);
+const isLoadingShiftSettlement = ref(false);
+const shiftSettlementData = ref(null);
+
+const openShiftSettlementModal = async () => {
+    isShiftSettlementOpen.value = true;
+    isLoadingShiftSettlement.value = true;
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const res = await fetch(appRoute('/api/cashier/current-shift') + '?date=' + today);
+        const data = await res.json();
+        if (data && data.settlement) {
+            shiftSettlementData.value = data.settlement;
+        }
+    } catch (err) {
+        console.error('Failed to load shift settlement:', err);
+    } finally {
+        isLoadingShiftSettlement.value = false;
+    }
+};
+
+const printShiftSettlementThermal = () => {
+    if (!shiftSettlementData.value) return;
+    const s = shiftSettlementData.value;
+
+    let iframe = document.getElementById('pos-shift-print-iframe');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'pos-shift-print-iframe';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '300px';
+        iframe.style.height = '300px';
+        iframe.style.border = '0';
+        iframe.style.visibility = 'hidden';
+        document.body.appendChild(iframe);
+    }
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+
+    const nowStr = new Date().toLocaleString('id-ID');
+    const terbilangCash = numberToWords(s.cash_total);
+
+    let itemsHtml = '';
+    if (s.items_sold && s.items_sold.length > 0) {
+        itemsHtml = s.items_sold.map(it => `
+            <div style="margin-bottom: 2px;">
+                <div>${it.product_name}</div>
+                <div style="display:flex; justify-content:space-between; color: #444; font-size: 7.2pt;">
+                    <span>${it.total_qty} ${it.unit_name} x ${formatRupiah(it.avg_price)}</span>
+                    <span style="font-weight:bold; color:#000;">${formatRupiah(it.total_subtotal)}</span>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        itemsHtml = '<div style="color:#777; text-align:center;">(Tidak ada rincian item)</div>';
+    }
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bukti Setoran Kasir</title>
+<style>
+@page { margin: 0; size: auto; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+    font-size: 8pt;
+    line-height: 1.25;
+    padding: 3mm 2mm;
+    color: #000;
+    width: 48mm;
+    max-width: 48mm;
+}
+.center { text-align: center; }
+.bold { font-weight: bold; }
+.dashed { border-bottom: 1px dashed #000; margin: 3px 0; padding-bottom: 3px; }
+.row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+.val { font-weight: bold; text-align: right; }
+.signatures { display: flex; justify-content: space-between; text-align: center; margin-top: 8px; font-size: 7pt; }
+</style>
+</head>
+<body>
+<div class="center dashed">
+    <div class="bold" style="font-size: 9pt;">KOPERASI RSIA AISYIYAH</div>
+    <div style="font-size: 7.5pt;">PEKAJANGAN - KANTIN</div>
+    <div class="bold" style="margin-top: 2px; font-size: 8.5pt;">BUKTI SETORAN KASIR</div>
+</div>
+<div class="dashed" style="font-size: 7.5pt;">
+    <div class="row"><span>Tanggal:</span><span class="val">${s.date}</span></div>
+    <div class="row"><span>Kasir:</span><span class="val">${s.cashier_name}</span></div>
+    <div class="row"><span>Jam Shift:</span><span class="val">${s.start_time} - ${s.end_time}</span></div>
+    <div class="row"><span>Range Nota:</span><span class="val" style="font-size: 6.8pt;">${s.first_invoice || '-'} s/d ${s.last_invoice || '-'}</span></div>
+    <div class="row"><span>Jml Trx:</span><span class="val">${s.transaction_count} Nota</span></div>
+</div>
+<div class="dashed">
+    <div class="bold" style="margin-bottom: 2px;">RINCIAN PEMBAYARAN:</div>
+    <div class="row" style="background:#f0f0f0; padding: 2px 0;">
+        <span class="bold">1. SETOR TUNAI:</span>
+        <span class="val" style="font-size: 9pt;">${formatRupiah(s.cash_total)}</span>
+    </div>
+    <div class="row"><span>2. QRIS (Bank):</span><span class="val">${formatRupiah(s.qris_total)}</span></div>
+    <div class="row"><span>3. Transfer:</span><span class="val">${formatRupiah(s.transfer_total)}</span></div>
+    <div class="row"><span>4. Bon Pegawai:</span><span class="val">${formatRupiah(s.tempo_total)}</span></div>
+    <div class="row bold" style="border-top: 1px solid #000; padding-top: 2px; margin-top: 2px;">
+        <span>TOTAL OMSET:</span><span class="val">${formatRupiah(s.total_net)}</span>
+    </div>
+</div>
+<div class="dashed" style="font-size: 7pt; font-style: italic;">
+    <div>Terbilang Setor Tunai:</div>
+    <div class="bold">${terbilangCash}</div>
+</div>
+<div class="dashed">
+    <div class="bold" style="margin-bottom: 2px;">RINCIAN BARANG TERJUAL:</div>
+    ${itemsHtml}
+    <div class="row bold" style="border-top: 1px dashed #000; padding-top: 2px; margin-top: 2px;">
+        <span>TOTAL ITEM:</span><span class="val">${s.total_items_qty || 0} unit</span>
+    </div>
+</div>
+<div class="signatures">
+    <div>
+        <div>Diserahkan,</div>
+        <div style="height: 25px;"></div>
+        <div class="bold">(${s.cashier_name})</div>
+        <div>Kasir</div>
+    </div>
+    <div>
+        <div>Diterima,</div>
+        <div style="height: 25px;"></div>
+        <div class="bold">( ............ )</div>
+        <div>Bag. Keuangan</div>
+    </div>
+</div>
+<div class="center" style="font-size: 6.5pt; color: #555; margin-top: 5px;">
+    Dicetak: ${nowStr}
+</div>
+</body>
+</html>`;
+
+    doc.write(html);
+    doc.close();
+
+    setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    }, 300);
+};
+
 </script>
 
 <template>
@@ -1568,6 +1722,17 @@ onUnmounted(() => {
                         >
                             <History class="w-3.5 h-3.5 text-amber-600" />
                             <span>Riwayat (F9)</span>
+                        </button>
+
+                        <!-- Rekap Shift & Setoran Kasir Modal Button -->
+                        <button 
+                            @click="openShiftSettlementModal"
+                            type="button"
+                            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition cursor-pointer active:scale-95 shrink-0 border border-emerald-200"
+                            title="Rekap Setoran & Detail Penjualan Shift Hari Ini"
+                        >
+                            <Banknote class="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Rekap Shift</span>
                         </button>
 
                         <!-- Toggle Mode Tablet (Mencegah virtual keyboard otomatis muncul) -->
@@ -3065,6 +3230,168 @@ onUnmounted(() => {
                 </div>
             </div>
         </div>
+
+        <!-- Modal Rekap Shift & Setoran Kasir Langsung di POS -->
+        <div 
+            v-if="isShiftSettlementOpen"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs overflow-y-auto"
+            @click.self="isShiftSettlementOpen = false"
+        >
+            <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200">
+                <!-- Modal Header -->
+                <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                    <div class="flex items-center gap-2.5">
+                        <div class="p-2 bg-emerald-100 text-emerald-800 rounded-xl">
+                            <Banknote class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900">Rekap Shift & Setoran Hari Ini</h3>
+                            <p class="text-[11px] text-slate-500">Rekonsiliasi kas masuk shift kasir & rincian barang terjual</p>
+                        </div>
+                    </div>
+                    <button 
+                        @click="isShiftSettlementOpen = false"
+                        class="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition"
+                    >
+                        <X class="w-5 h-5" />
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-5 overflow-y-auto space-y-4">
+                    <div v-if="isLoadingShiftSettlement" class="py-12 text-center text-slate-400">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent mb-2"></div>
+                        <p class="text-xs font-bold">Memuat rekap shift kasir...</p>
+                    </div>
+
+                    <template v-else-if="shiftSettlementData">
+                        <!-- Shift Meta -->
+                        <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-3.5 rounded-2xl flex items-center justify-between">
+                            <div>
+                                <div class="text-[10px] text-slate-300">Kasir: <strong class="text-amber-400 text-xs">{{ shiftSettlementData.cashier_name }}</strong></div>
+                                <div class="text-[10px] text-slate-300 mt-0.5">
+                                    Jam Shift: {{ shiftSettlementData.start_time }} - {{ shiftSettlementData.end_time }} WIB • {{ shiftSettlementData.transaction_count }} Nota
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[10px] text-slate-400 uppercase font-semibold">Total Omset</div>
+                                <div class="text-base font-black text-white font-mono">{{ formatRupiah(shiftSettlementData.total_net) }}</div>
+                            </div>
+                        </div>
+
+                        <!-- 4 Financial Cards Mini -->
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                <div class="text-[10px] font-bold text-emerald-800 uppercase flex items-center gap-1">
+                                    <Banknote class="w-3.5 h-3.5 text-emerald-600" />
+                                    1. Setor Tunai Fisik
+                                </div>
+                                <div class="text-base font-black text-emerald-950 font-mono mt-1">
+                                    {{ formatRupiah(shiftSettlementData.cash_total) }}
+                                </div>
+                                <div class="text-[9.5px] text-emerald-700 italic truncate mt-0.5">
+                                    "{{ numberToWords(shiftSettlementData.cash_total) }}"
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                                <div class="text-[10px] font-bold text-blue-800 uppercase flex items-center gap-1">
+                                    <QrCode class="w-3.5 h-3.5 text-blue-600" />
+                                    2. QRIS (Bank)
+                                </div>
+                                <div class="text-base font-black text-blue-950 font-mono mt-1">
+                                    {{ formatRupiah(shiftSettlementData.qris_total) }}
+                                </div>
+                                <div class="text-[9.5px] text-blue-700 mt-0.5">Masuk Rekening Bank RS</div>
+                            </div>
+
+                            <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl">
+                                <div class="text-[10px] font-bold text-purple-800 uppercase flex items-center gap-1">
+                                    <CreditCard class="w-3.5 h-3.5 text-purple-600" />
+                                    3. Transfer Bank
+                                </div>
+                                <div class="text-base font-black text-purple-950 font-mono mt-1">
+                                    {{ formatRupiah(shiftSettlementData.transfer_total) }}
+                                </div>
+                                <div class="text-[9.5px] text-purple-700 mt-0.5">Masuk Rekening Koperasi</div>
+                            </div>
+
+                            <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                <div class="text-[10px] font-bold text-amber-800 uppercase flex items-center gap-1">
+                                    <Receipt class="w-3.5 h-3.5 text-amber-600" />
+                                    4. Bon Pegawai (Tempo)
+                                </div>
+                                <div class="text-base font-black text-amber-950 font-mono mt-1">
+                                    {{ formatRupiah(shiftSettlementData.tempo_total) }}
+                                </div>
+                                <div class="text-[9.5px] text-amber-700 mt-0.5">Potong Payroll RSIA</div>
+                            </div>
+                        </div>
+
+                        <!-- Itemized Sales Breakdown Table -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between text-xs font-bold text-slate-800">
+                                <span>Rincian Barang Terjual Hari Ini:</span>
+                                <span class="text-slate-500 font-medium text-[11px]">{{ shiftSettlementData.total_items_qty || 0 }} unit total</span>
+                            </div>
+                            <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-xl">
+                                <table class="w-full text-left border-collapse text-[11px]">
+                                    <thead class="bg-slate-100 text-slate-600 sticky top-0 font-semibold text-[10px]">
+                                        <tr>
+                                            <th class="p-2 w-8 text-center">No</th>
+                                            <th class="p-2">Nama Menu / Produk</th>
+                                            <th class="p-2 text-center">Satuan</th>
+                                            <th class="p-2 text-center">Qty</th>
+                                            <th class="p-2 text-right">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr v-for="(it, idx) in shiftSettlementData.items_sold" :key="idx" class="hover:bg-slate-50">
+                                            <td class="p-2 text-center text-slate-400">{{ idx + 1 }}</td>
+                                            <td class="p-2 font-bold text-slate-900">{{ it.product_name }}</td>
+                                            <td class="p-2 text-center uppercase text-slate-500 text-[10px]">{{ it.unit_name }}</td>
+                                            <td class="p-2 text-center font-black text-amber-900">{{ it.total_qty }}</td>
+                                            <td class="p-2 text-right font-mono font-bold">{{ formatRupiah(it.total_subtotal) }}</td>
+                                        </tr>
+                                        <tr v-if="!shiftSettlementData.items_sold || shiftSettlementData.items_sold.length === 0">
+                                            <td colspan="5" class="p-4 text-center text-slate-400">Belum ada penjualan di shift ini.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                    <a 
+                        :href="appRoute('/cashier/settlement')"
+                        class="text-xs font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1"
+                    >
+                        <span>Buka Halaman Lengkap & A4</span>
+                        <ChevronRight class="w-3.5 h-3.5" />
+                    </a>
+
+                    <div class="flex items-center gap-2">
+                        <button 
+                            @click="isShiftSettlementOpen = false"
+                            class="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition"
+                        >
+                            Tutup
+                        </button>
+                        <button 
+                            @click="printShiftSettlementThermal"
+                            class="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
+                        >
+                            <Printer class="w-4 h-4 text-amber-400" />
+                            <span>Cetak Struk Setoran</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </MainLayout>
 </template>
 

@@ -121,8 +121,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/receivables/{receivable}/pay', [EmployeeReceivableController::class, 'pay'])->name('receivables.pay');
     });
 
-    // Laporan & Rekap Setoran Keuangan (Admin & Kasir)
-    Route::middleware('role:admin,kasir')->group(function () {
+    // Rekap Setoran & Detail Penjualan Shift Kasir (Kasir & Admin)
+    Route::middleware('role:kasir,admin')->group(function () {
+        Route::get('/cashier/settlement', [\App\Http\Controllers\CashierSettlementController::class, 'index'])->name('cashier.settlement');
+        Route::get('/cashier/settlement/export-excel', [\App\Http\Controllers\CashierSettlementController::class, 'exportExcel'])->name('cashier.settlement.exportExcel');
+        Route::get('/api/cashier/current-shift', [\App\Http\Controllers\CashierSettlementController::class, 'currentShift'])->name('cashier.settlement.currentShift');
+    });
+
+    // Laporan & Analisis Omset Keseluruhan (Khusus Admin / Keuangan Eksekutif)
+    Route::middleware('role:admin')->group(function () {
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/export-excel', [ReportController::class, 'exportExcel'])->name('reports.exportExcel');
         Route::get('/reports/export-settlement', [ReportController::class, 'exportSettlementExcel'])->name('reports.exportSettlement');

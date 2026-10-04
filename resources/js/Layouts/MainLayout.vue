@@ -7,7 +7,7 @@ import {
     LogOut, CheckCircle, AlertTriangle, Shield,
     RotateCcw, Settings, Menu, X, ArrowLeftRight,
     LayoutDashboard, Wallet, UserCog,
-    PanelLeftClose, PanelLeftOpen
+    PanelLeftClose, PanelLeftOpen, Banknote
 } from 'lucide-vue-next';
 
 const page = usePage();
@@ -46,7 +46,8 @@ const allNavigation = computed(() => [
     { name: 'Stok Opname', href: appRoute('/stock-opnames'), rawPath: '/stock-opnames', icon: ClipboardCheck, roles: ['admin', 'gudang', 'kasir'] },
     { name: 'Piutang Karyawan', href: appRoute('/receivables'), rawPath: '/receivables', icon: ClipboardList, roles: ['admin', 'kasir'] },
     { name: 'Buku Kas & Cashbox', href: appRoute('/cashboxes'), rawPath: '/cashboxes', icon: Wallet, roles: ['admin', 'kasir'] },
-    { name: 'Laporan & Setoran', href: appRoute('/reports'), rawPath: '/reports', icon: BarChart3, roles: ['admin', 'kasir'] },
+    { name: 'Rekap Setoran Saya', href: appRoute('/cashier/settlement'), rawPath: '/cashier/settlement', icon: Banknote, roles: ['admin', 'kasir'] },
+    { name: 'Laporan & Omset', href: appRoute('/reports'), rawPath: '/reports', icon: BarChart3, roles: ['admin'] },
     { name: 'Kelola Pengguna & Staff', href: appRoute('/users'), rawPath: '/users', icon: UserCog, roles: ['admin'] },
     { name: 'Pengaturan Kantin', href: appRoute('/settings'), rawPath: '/settings', icon: Settings, roles: ['admin'] },
 ]);

@@ -173,6 +173,21 @@ body {
     <div>Terbilang Setor Tunai:</div>
     <div class="bold">${terbilangCash}</div>
 </div>
+<div class="dashed">
+    <div class="bold" style="margin-bottom: 2px;">RINCIAN BARANG TERJUAL:</div>
+    ${(s.items_sold && s.items_sold.length > 0) ? s.items_sold.map(it => `
+        <div style="margin-bottom: 2px;">
+            <div>${it.product_name}</div>
+            <div class="row" style="color: #444; font-size: 7.2pt;">
+                <span>${it.total_qty} ${it.unit_name} x ${formatRupiah(it.avg_price)}</span>
+                <span class="val" style="color:#000;">${formatRupiah(it.total_subtotal)}</span>
+            </div>
+        </div>
+    `).join("") : "<div style='color:#777; text-align:center;'>(Tidak ada rincian item)</div>"}
+    <div class="row bold" style="border-top: 1px dashed #000; padding-top: 2px; margin-top: 2px;">
+        <span>TOTAL ITEM:</span><span class="val">${s.total_items_qty || 0} unit</span>
+    </div>
+</div>
 <div class="signatures">
     <div>
         <div>Diserahkan,</div>
@@ -1611,6 +1626,32 @@ const openReprint = (trx) => {
                             <span class="text-emerald-900 font-black italic block">"{{ numberToWords(selectedSettlement.cash_total) }}"</span>
                         </div>
 
+                        <div>
+                            <div class="font-black text-[11px] text-slate-900 uppercase mb-1.5">II. Rincian Produk Terjual</div>
+                            <div class="max-h-40 overflow-y-auto border border-slate-200 rounded-xl">
+                                <table class="w-full text-left border-collapse text-[10px]">
+                                    <thead class="bg-slate-100 text-slate-700 sticky top-0">
+                                        <tr>
+                                            <th class="p-1.5 w-8 text-center">No</th>
+                                            <th class="p-1.5">Nama Produk</th>
+                                            <th class="p-1.5 text-center">Satuan</th>
+                                            <th class="p-1.5 text-center">Qty</th>
+                                            <th class="p-1.5 text-right">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr v-for="(it, idx) in selectedSettlement.items_sold" :key="idx">
+                                            <td class="p-1.5 text-center">{{ idx + 1 }}</td>
+                                            <td class="p-1.5 font-bold">{{ it.product_name }}</td>
+                                            <td class="p-1.5 text-center uppercase">{{ it.unit_name }}</td>
+                                            <td class="p-1.5 text-center font-bold">{{ it.total_qty }}</td>
+                                            <td class="p-1.5 text-right font-mono">{{ formatRupiah(it.total_subtotal) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-2 gap-4 text-center text-xs pt-4 border-t border-slate-200">
                             <div>
                                 <p class="text-slate-500">Diserahkan oleh,</p>
@@ -1658,6 +1699,20 @@ const openReprint = (trx) => {
                             <div class="flex justify-between font-black pt-1 border-t border-slate-200">
                                 <span>TOTAL OMSET:</span>
                                 <span>{{ formatRupiah(selectedSettlement.total_net) }}</span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-dashed border-slate-400 my-2"></div>
+
+                        <!-- Items in Thermal Preview -->
+                        <div class="text-[9.5px] space-y-1">
+                            <div class="font-bold text-[10px]">RINCIAN BARANG:</div>
+                            <div v-for="(it, idx) in selectedSettlement.items_sold" :key="idx" class="space-y-0.5">
+                                <div class="truncate">{{ it.product_name }}</div>
+                                <div class="flex justify-between text-slate-500 text-[9px]">
+                                    <span>{{ it.total_qty }} {{ it.unit_name }} x {{ formatRupiah(it.avg_price) }}</span>
+                                    <span class="text-slate-900 font-bold">{{ formatRupiah(it.total_subtotal) }}</span>
+                                </div>
                             </div>
                         </div>
 

@@ -208,6 +208,33 @@ class ReportController extends Controller
             $discount = (float) $trxs->sum('discount');
             $net = (float) $trxs->sum('total_net');
 
+            $trxIds = $trxs->pluck('id');
+            $itemsSold = TransactionItem::whereIn('transaction_id', $trxIds)
+                ->with(['product:id,name,sku,category_id', 'product.category:id,name', 'unit:id,unit_name'])
+                ->select(
+                    'product_id',
+                    'product_unit_id',
+                    DB::raw('SUM(qty) as total_qty'),
+                    DB::raw('SUM(subtotal) as total_subtotal'),
+                    DB::raw('AVG(unit_price) as avg_price')
+                )
+                ->groupBy('product_id', 'product_unit_id')
+                ->get()
+                ->map(function ($it) {
+                    return [
+                        'product_id' => $it->product_id,
+                        'product_name' => $it->product ? $it->product->name : 'Item Terhapus',
+                        'category_name' => $it->product && $it->product->category ? $it->product->category->name : 'Umum',
+                        'unit_name' => $it->unit ? $it->unit->unit_name : 'Pcs',
+                        'avg_price' => (float) $it->avg_price,
+                        'total_qty' => (float) $it->total_qty,
+                        'total_subtotal' => (float) $it->total_subtotal,
+                    ];
+                })
+                ->sortByDesc('total_qty')
+                ->values()
+                ->all();
+
             $cashierSettlements[] = [
                 'id' => $key,
                 'date' => $d,
@@ -227,6 +254,9 @@ class ReportController extends Controller
                 'total_net' => $net,
                 'first_invoice' => $trxs->first()->invoice_number,
                 'last_invoice' => $trxs->last()->invoice_number,
+                'items_sold' => $itemsSold,
+                'total_items_qty' => array_sum(array_column($itemsSold, 'total_qty')),
+                'total_items_count' => count($itemsSold),
             ];
         }
 
@@ -551,6 +581,31 @@ class ReportController extends Controller
         }
 
         $rawTrxs = $trxQuery->with('cashier')->orderBy('created_at', 'asc')->get();
+        $rawTrxIds = $rawTrxs->pluck('id');
+        $periodItemsSold = TransactionItem::whereIn('transaction_id', $rawTrxIds)
+            ->with(['product:id,name,sku,category_id', 'product.category:id,name', 'unit:id,unit_name'])
+            ->select(
+                'product_id',
+                'product_unit_id',
+                DB::raw('SUM(qty) as total_qty'),
+                DB::raw('SUM(subtotal) as total_subtotal'),
+                DB::raw('AVG(unit_price) as avg_price')
+            )
+            ->groupBy('product_id', 'product_unit_id')
+            ->get()
+            ->map(function ($it) {
+                return [
+                    'product_name' => $it->product ? $it->product->name : 'Item Terhapus',
+                    'category_name' => $it->product && $it->product->category ? $it->product->category->name : 'Umum',
+                    'unit_name' => $it->unit ? $it->unit->unit_name : 'Pcs',
+                    'avg_price' => (float) $it->avg_price,
+                    'total_qty' => (float) $it->total_qty,
+                    'total_subtotal' => (float) $it->total_subtotal,
+                ];
+            })
+            ->sortByDesc('total_qty')
+            ->values()
+            ->all();
 
         $groupedByCashierDay = $rawTrxs->groupBy(function ($t) {
             return $t->created_at->format('Y-m-d') . '_' . $t->cashier_id;
@@ -603,7 +658,7 @@ class ReportController extends Controller
             "Expires" => "0"
         ];
 
-        $callback = function () use ($settlements, $startDate, $endDate) {
+        $callback = function () use ($settlements, $periodItemsSold, $startDate, $endDate) {
             $output = fopen('php://output', 'w');
 
             $html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
@@ -682,7 +737,34 @@ class ReportController extends Controller
             $html .= '<td class="num bold" style="background-color: #b45309 !important; color:#ffffff !important;">' . $totTempo . '</td>';
             $html .= '<td class="num bold" style="background-color: #0f172a !important; color:#ffffff !important;">' . $totNet . '</td>';
             $html .= '</tr>';
-            $html .= '</tbody></table>';
+            $html .= '</tbody></table><br><br>';
+
+            // Tabel II: Rincian Produk / Menu Kantin Terjual
+            $html .= '<div style="font-size: 13pt; font-weight: bold; color: #0f172a; margin-bottom: 8px;">II. RINCIAN DETAIL PRODUK / MENU KANTIN TERJUAL</div>';
+            $html .= '<table><thead><tr>';
+            $html .= '<th style="width: 40px;">No</th><th>Nama Produk / Menu Kantin</th><th>Kategori</th><th style="width: 80px; text-align:center;">Satuan</th><th style="width: 90px; text-align:center;">Qty Terjual</th><th style="width: 140px; text-align:right;">Subtotal (Rp)</th>';
+            $html .= '</tr></thead><tbody>';
+
+            $itemNo = 1;
+            $totItemQty = 0;
+            $totItemSubtotal = 0;
+            foreach ($periodItemsSold as $item) {
+                $totItemQty += $item['total_qty'];
+                $totItemSubtotal += $item['total_subtotal'];
+                $html .= '<tr>';
+                $html .= '<td class="center">' . $itemNo++ . '</td>';
+                $html .= '<td class="bold">' . htmlspecialchars($item['product_name']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($item['category_name']) . '</td>';
+                $html .= '<td class="center">' . htmlspecialchars($item['unit_name']) . '</td>';
+                $html .= '<td class="center bold">' . $item['total_qty'] . '</td>';
+                $html .= '<td class="num bold">' . $item['total_subtotal'] . '</td>';
+                $html .= '</tr>';
+            }
+            $html .= '<tr class="total-row">';
+            $html .= '<td colspan="4" class="center bold">TOTAL PRODUK TERJUAL</td>';
+            $html .= '<td class="center bold">' . $totItemQty . '</td>';
+            $html .= '<td class="num bold" style="background-color: #0f172a !important; color:#ffffff !important;">' . $totItemSubtotal . '</td>';
+            $html .= '</tr></tbody></table>';
 
             // Lembar Tanda Tangan Serah Terima
             $html .= '<br><br>';
