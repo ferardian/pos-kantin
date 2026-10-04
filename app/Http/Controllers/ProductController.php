@@ -70,7 +70,7 @@ class ProductController extends Controller
             'units.*.is_base_unit' => 'required|boolean',
         ]);
 
-        return DB::transaction(function () use ($validated) {
+        return DB::transaction(function () use ($request, $validated) {
             $sku = trim($validated['sku'] ?? '');
             if ($sku === '') {
                 $lastProduct = Product::where('sku', 'like', 'KTN-%')->orderByDesc('id')->first();
@@ -97,6 +97,10 @@ class ProductController extends Controller
             // Kasir tidak boleh mengisi stok fisik awal (stok awal selalu 0, harus lewat penerimaan barang)
             $stockPhysical = ($user && $user->role === 'kasir') ? 0 : ($validated['stock_physical'] ?? 0);
 
+            $trackStock = array_key_exists('track_stock', $validated) && $validated['track_stock'] !== null
+                ? (bool) $validated['track_stock']
+                : ($request->has('track_stock') ? $request->boolean('track_stock') : true);
+
             $product = Product::create([
                 'sku' => $sku,
                 'barcode' => $barcode,
@@ -104,7 +108,7 @@ class ProductController extends Controller
                 'category_id' => $validated['category_id'] ?? null,
                 'brand_id' => $validated['brand_id'] ?? null,
                 'min_stock' => $validated['min_stock'] ?? 0,
-                'track_stock' => $request->has('track_stock') ? $request->boolean('track_stock') : true,
+                'track_stock' => $trackStock,
                 'stock_physical' => $stockPhysical,
                 'stock_booked' => 0,
                 'description' => $validated['description'] ?? null,
@@ -167,7 +171,11 @@ class ProductController extends Controller
             'units.*.is_base_unit' => 'required|boolean',
         ]);
 
-        return DB::transaction(function () use ($product, $validated) {
+        return DB::transaction(function () use ($request, $product, $validated) {
+            $trackStock = array_key_exists('track_stock', $validated) && $validated['track_stock'] !== null
+                ? (bool) $validated['track_stock']
+                : ($request->has('track_stock') ? $request->boolean('track_stock') : true);
+
             $product->update([
                 'sku' => $validated['sku'],
                 'barcode' => $validated['barcode'] ?? null,
@@ -175,7 +183,7 @@ class ProductController extends Controller
                 'category_id' => $validated['category_id'] ?? null,
                 'brand_id' => $validated['brand_id'] ?? null,
                 'min_stock' => $validated['min_stock'],
-                'track_stock' => $request->has('track_stock') ? $request->boolean('track_stock') : true,
+                'track_stock' => $trackStock,
                 'description' => $validated['description'] ?? null,
             ]);
 
@@ -209,10 +217,17 @@ class ProductController extends Controller
                 $submittedUnitIds[] = $newUnit->id;
             }
 
-            // Delete units that were removed
-            ProductUnit::where('product_id', $product->id)
+            // Delete units that were removed (safe deletion)
+            $unitsToDelete = ProductUnit::where('product_id', $product->id)
                 ->whereNotIn('id', $submittedUnitIds)
-                ->delete();
+                ->get();
+            foreach ($unitsToDelete as $unitToDelete) {
+                try {
+                    $unitToDelete->delete();
+                } catch (\Throwable $e) {
+                    \Log::warning("Cannot delete unit ID {$unitToDelete->id} for product {$product->id}: " . $e->getMessage());
+                }
+            }
 
             return back()->with('success', "Data produk '{$product->name}' berhasil diperbarui.");
         });
