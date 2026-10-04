@@ -1512,12 +1512,20 @@ const isShiftSettlementOpen = ref(false);
 const isLoadingShiftSettlement = ref(false);
 const shiftSettlementData = ref(null);
 
-const openShiftSettlementModal = async () => {
+const shiftModalScope = ref('all');
+
+const openShiftSettlementModal = async (scope = 'all') => {
+    shiftModalScope.value = scope;
     isShiftSettlementOpen.value = true;
+    await fetchShiftSettlement(scope);
+};
+
+const fetchShiftSettlement = async (scope) => {
     isLoadingShiftSettlement.value = true;
     try {
         const today = new Date().toISOString().split('T')[0];
-        const res = await fetch(appRoute('/api/cashier/current-shift') + '?date=' + today);
+        const cashierParam = scope === 'mine' ? (props.user?.id || 'all') : 'all';
+        const res = await fetch(appRoute('/api/cashier/current-shift') + '?date=' + today + '&cashier_id=' + cashierParam);
         const data = await res.json();
         if (data && data.settlement) {
             shiftSettlementData.value = data.settlement;
@@ -1527,6 +1535,11 @@ const openShiftSettlementModal = async () => {
     } finally {
         isLoadingShiftSettlement.value = false;
     }
+};
+
+const switchShiftModalScope = (scope) => {
+    shiftModalScope.value = scope;
+    fetchShiftSettlement(scope);
 };
 
 const printShiftSettlementThermal = () => {
@@ -1732,7 +1745,7 @@ body {
                             title="Rekap Setoran & Detail Penjualan Shift Hari Ini"
                         >
                             <Banknote class="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Rekap Shift</span>
+                            <span>Rekap Penjualan</span>
                         </button>
 
                         <!-- Toggle Mode Tablet (Mencegah virtual keyboard otomatis muncul) -->
@@ -3239,22 +3252,45 @@ body {
         >
             <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200">
                 <!-- Modal Header -->
-                <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50">
                     <div class="flex items-center gap-2.5">
                         <div class="p-2 bg-emerald-100 text-emerald-800 rounded-xl">
                             <Banknote class="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 class="text-sm font-black text-slate-900">Rekap Shift & Setoran Hari Ini</h3>
-                            <p class="text-[11px] text-slate-500">Rekonsiliasi kas masuk shift kasir & rincian barang terjual</p>
+                            <h3 class="text-sm font-black text-slate-900">Rekap Penjualan & Setoran Hari Ini</h3>
+                            <p class="text-[11px] text-slate-500">Uang setoran di laci kasir & rincian barang terjual</p>
                         </div>
                     </div>
-                    <button 
-                        @click="isShiftSettlementOpen = false"
-                        class="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition"
-                    >
-                        <X class="w-5 h-5" />
-                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <!-- Toggle Semua Kasir vs Shift Saya -->
+                        <div class="flex items-center bg-slate-200/80 p-0.5 rounded-xl text-xs font-bold">
+                            <button 
+                                @click="switchShiftModalScope('all')"
+                                type="button"
+                                :class="shiftModalScope === 'all' ? 'bg-white text-emerald-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                                class="px-2.5 py-1 rounded-lg transition cursor-pointer text-[11px]"
+                            >
+                                📊 Semua Kasir
+                            </button>
+                            <button 
+                                @click="switchShiftModalScope('mine')"
+                                type="button"
+                                :class="shiftModalScope === 'mine' ? 'bg-white text-emerald-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+                                class="px-2.5 py-1 rounded-lg transition cursor-pointer text-[11px]"
+                            >
+                                👤 Shift Saya
+                            </button>
+                        </div>
+
+                        <button 
+                            @click="isShiftSettlementOpen = false"
+                            class="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition"
+                        >
+                            <X class="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Modal Body -->
@@ -3268,7 +3304,7 @@ body {
                         <!-- Shift Meta -->
                         <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-3.5 rounded-2xl flex items-center justify-between">
                             <div>
-                                <div class="text-[10px] text-slate-300">Kasir: <strong class="text-amber-400 text-xs">{{ shiftSettlementData.cashier_name }}</strong></div>
+                                <div class="text-[10px] text-slate-300">Petugas / Rekap: <strong class="text-amber-400 text-xs">{{ shiftSettlementData.cashier_title || shiftSettlementData.cashier_name }}</strong></div>
                                 <div class="text-[10px] text-slate-300 mt-0.5">
                                     Jam Shift: {{ shiftSettlementData.start_time }} - {{ shiftSettlementData.end_time }} WIB • {{ shiftSettlementData.transaction_count }} Nota
                                 </div>
