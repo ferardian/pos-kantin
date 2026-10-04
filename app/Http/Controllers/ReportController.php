@@ -184,9 +184,101 @@ class ReportController extends Controller
                 ];
             });
 
+        // 11. Rekapitulasi Setoran Kasir & Penjualan Harian untuk Keuangan RSIA
+        $settlementRaw = (clone $trxQuery)
+            ->with('cashier')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $groupedByCashierDay = $settlementRaw->groupBy(function ($t) {
+            return $t->created_at->format('Y-m-d') . '_' . $t->cashier_id;
+        });
+
+        $cashierSettlements = [];
+        foreach ($groupedByCashierDay as $key => $trxs) {
+            $first = $trxs->first();
+            $d = $first->created_at->format('Y-m-d');
+            $cashier = $first->cashier;
+
+            $cash = (float) $trxs->where('payment_method', 'cash')->sum('total_net');
+            $qris = (float) $trxs->where('payment_method', 'qris')->sum('total_net');
+            $transfer = (float) $trxs->where('payment_method', 'transfer')->sum('total_net');
+            $tempo = (float) $trxs->where('payment_method', 'tempo')->sum('total_net');
+            $gross = (float) $trxs->sum('total_gross');
+            $discount = (float) $trxs->sum('discount');
+            $net = (float) $trxs->sum('total_net');
+
+            $cashierSettlements[] = [
+                'id' => $key,
+                'date' => $d,
+                'formatted_date' => Carbon::parse($d)->translatedFormat('l, d F Y'),
+                'cashier_id' => $first->cashier_id,
+                'cashier_name' => $cashier ? $cashier->name : 'Kasir',
+                'start_time' => Carbon::parse($trxs->min('created_at'))->format('H:i'),
+                'end_time' => Carbon::parse($trxs->max('created_at'))->format('H:i'),
+                'transaction_count' => $trxs->count(),
+                'cash_total' => $cash,
+                'non_cash_total' => $qris + $transfer,
+                'qris_total' => $qris,
+                'transfer_total' => $transfer,
+                'tempo_total' => $tempo,
+                'total_gross' => $gross,
+                'total_discount' => $discount,
+                'total_net' => $net,
+                'first_invoice' => $trxs->first()->invoice_number,
+                'last_invoice' => $trxs->last()->invoice_number,
+            ];
+        }
+
+        usort($cashierSettlements, function ($a, $b) {
+            if ($a['date'] === $b['date']) {
+                return strcmp($a['cashier_name'], $b['cashier_name']);
+            }
+            return strcmp($b['date'], $a['date']);
+        });
+
+        // Grouped by Day only (Daily Summaries across all cashiers)
+        $groupedByDay = $settlementRaw->groupBy(function ($t) {
+            return $t->created_at->format('Y-m-d');
+        });
+
+        $dailySummaries = [];
+        foreach ($groupedByDay as $d => $trxs) {
+            $cash = (float) $trxs->where('payment_method', 'cash')->sum('total_net');
+            $qris = (float) $trxs->where('payment_method', 'qris')->sum('total_net');
+            $transfer = (float) $trxs->where('payment_method', 'transfer')->sum('total_net');
+            $tempo = (float) $trxs->where('payment_method', 'tempo')->sum('total_net');
+            $gross = (float) $trxs->sum('total_gross');
+            $discount = (float) $trxs->sum('discount');
+            $net = (float) $trxs->sum('total_net');
+
+            $cashierNames = $trxs->pluck('cashier.name')->filter()->unique()->values()->all();
+
+            $dailySummaries[] = [
+                'date' => $d,
+                'formatted_date' => Carbon::parse($d)->translatedFormat('l, d F Y'),
+                'cashier_names' => $cashierNames,
+                'transaction_count' => $trxs->count(),
+                'cash_total' => $cash,
+                'non_cash_total' => $qris + $transfer,
+                'qris_total' => $qris,
+                'transfer_total' => $transfer,
+                'tempo_total' => $tempo,
+                'total_gross' => $gross,
+                'total_discount' => $discount,
+                'total_net' => $net,
+            ];
+        }
+
+        usort($dailySummaries, function ($a, $b) {
+            return strcmp($b['date'], $a['date']);
+        });
+
         $allUsers = User::select('id', 'name', 'role')->get();
 
         return Inertia::render('Reports/Index', [
+            'cashierSettlements' => $cashierSettlements,
+            'dailySummaries' => $dailySummaries,
             'filters' => [
                 'start_date' => $startDate,
                 'end_date' => $endDate,
@@ -265,7 +357,7 @@ class ReportController extends Controller
             $html .= 'th.sub { background-color: #334155; color: #ffffff; border: 1px solid #1e293b; }';
             $html .= 'td { padding: 7px 8px; border: 1px solid #cbd5e1; vertical-align: middle; }';
             $html .= 'tr:nth-child(even) { background-color: #f8fafc; }';
-            $html .= '.num { text-align: right; mso-number-format:"\#\,\#\#0"; }';
+            $html .= '.num { text-align: right; mso-number-format:\"\#\,\#\#0\"; }';
             $html .= '.center { text-align: center; }';
             $html .= '.bold { font-weight: bold; }';
             $html .= '.total-row { background-color: #0f172a !important; color: #ffffff !important; font-weight: bold; }';
@@ -432,6 +524,185 @@ class ReportController extends Controller
             $html .= '<td class="num bold">' . $totalDebtAmount . '</td>';
             $html .= '</tr>';
             $html .= '</tbody></table>';
+
+            $html .= '</body></html>';
+
+            fwrite($output, $html);
+            fclose($output);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
+    }
+
+    public function exportSettlementExcel(Request $request)
+    {
+        $startDate = $request->query('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->query('end_date', Carbon::now()->toDateString());
+        $cashierId = $request->query('cashier_id', 'all');
+
+        $startDateTime = Carbon::parse($startDate)->startOfDay();
+        $endDateTime = Carbon::parse($endDate)->endOfDay();
+
+        $fileName = 'Rekap_Setoran_Keuangan_RSIA_' . date('Ymd_His') . '.xls';
+
+        $trxQuery = Transaction::whereBetween('created_at', [$startDateTime, $endDateTime]);
+        if ($cashierId !== 'all') {
+            $trxQuery->where('cashier_id', $cashierId);
+        }
+
+        $rawTrxs = $trxQuery->with('cashier')->orderBy('created_at', 'asc')->get();
+
+        $groupedByCashierDay = $rawTrxs->groupBy(function ($t) {
+            return $t->created_at->format('Y-m-d') . '_' . $t->cashier_id;
+        });
+
+        $settlements = [];
+        foreach ($groupedByCashierDay as $key => $trxs) {
+            $first = $trxs->first();
+            $d = $first->created_at->format('Y-m-d');
+            $cashier = $first->cashier;
+
+            $cash = (float) $trxs->where('payment_method', 'cash')->sum('total_net');
+            $qris = (float) $trxs->where('payment_method', 'qris')->sum('total_net');
+            $transfer = (float) $trxs->where('payment_method', 'transfer')->sum('total_net');
+            $tempo = (float) $trxs->where('payment_method', 'tempo')->sum('total_net');
+            $gross = (float) $trxs->sum('total_gross');
+            $discount = (float) $trxs->sum('discount');
+            $net = (float) $trxs->sum('total_net');
+
+            $settlements[] = [
+                'date' => $d,
+                'cashier_name' => $cashier ? $cashier->name : 'Kasir',
+                'start_time' => Carbon::parse($trxs->min('created_at'))->format('H:i'),
+                'end_time' => Carbon::parse($trxs->max('created_at'))->format('H:i'),
+                'count' => $trxs->count(),
+                'cash' => $cash,
+                'qris' => $qris,
+                'transfer' => $transfer,
+                'tempo' => $tempo,
+                'gross' => $gross,
+                'discount' => $discount,
+                'net' => $net,
+                'first_inv' => $trxs->first()->invoice_number,
+                'last_inv' => $trxs->last()->invoice_number,
+            ];
+        }
+
+        usort($settlements, function ($a, $b) {
+            if ($a['date'] === $b['date']) {
+                return strcmp($a['cashier_name'], $b['cashier_name']);
+            }
+            return strcmp($b['date'], $a['date']);
+        });
+
+        $headers = [
+            "Content-Type" => "application/vnd.ms-excel; charset=utf-8",
+            "Content-Disposition" => "attachment; filename=\"" . $fileName . "\"",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $callback = function () use ($settlements, $startDate, $endDate) {
+            $output = fopen('php://output', 'w');
+
+            $html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            $html .= '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
+            $html .= '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rekap Setoran Kasir</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
+            $html .= '<style>';
+            $html .= 'body { font-family: "Calibri", "Segoe UI", Arial, sans-serif; font-size: 11pt; }';
+            $html .= '.title { font-size: 16pt; font-weight: bold; color: #166534; }';
+            $html .= '.subtitle { font-size: 11pt; color: #475569; }';
+            $html .= 'table { border-collapse: collapse; width: 100%; margin-bottom: 25px; }';
+            $html .= 'th { background-color: #0f172a; color: #ffffff; font-weight: bold; padding: 10px 8px; border: 1px solid #1e293b; text-align: center; font-size: 10.5pt; }';
+            $html .= 'th.green { background-color: #15803d; border: 1px solid #166534; }';
+            $html .= 'th.blue { background-color: #1d4ed8; border: 1px solid #1e40af; }';
+            $html .= 'th.amber { background-color: #b45309; border: 1px solid #92400e; }';
+            $html .= 'td { padding: 7px 8px; border: 1px solid #cbd5e1; vertical-align: middle; }';
+            $html .= 'tr:nth-child(even) { background-color: #f8fafc; }';
+            $html .= '.num { text-align: right; mso-number-format:\"\#\,\#\#0\"; }';
+            $html .= '.center { text-align: center; }';
+            $html .= '.bold { font-weight: bold; }';
+            $html .= '.total-row { background-color: #0f172a !important; color: #ffffff !important; font-weight: bold; }';
+            $html .= '.total-row td { border: 1px solid #0f172a; color: #ffffff; }';
+            $html .= '</style></head><body>';
+
+            $html .= '<div class="title">KOPERASI RSIA AISYIYAH PEKAJANGAN</div>';
+            $html .= '<div style="font-size: 13pt; font-weight: bold; color: #0f172a;">BERITA ACARA REKAPITULASI PENJUALAN & SETORAN KASIR KANTIN</div>';
+            $html .= '<div class="subtitle">Periode: <strong>' . date('d/m/Y', strtotime($startDate)) . ' s/d ' . date('d/m/Y', strtotime($endDate)) . '</strong> | Tanggal Unduh: ' . date('d/m/Y H:i:s') . ' WIB</div><br>';
+
+            $html .= '<table>';
+            $html .= '<thead><tr>';
+            $html .= '<th style="width: 40px;">No</th>';
+            $html .= '<th style="width: 100px;">Tanggal</th>';
+            $html .= '<th style="width: 130px;">Kasir Bertugas</th>';
+            $html .= '<th style="width: 100px;">Jam Shift</th>';
+            $html .= '<th style="width: 60px;">Jml Trx</th>';
+            $html .= '<th style="width: 170px;">Range Faktur</th>';
+            $html .= '<th class="green" style="width: 140px;">1. SETORAN TUNAI (Uang Fisik Kasir)</th>';
+            $html .= '<th class="blue" style="width: 120px;">2. QRIS (Bank)</th>';
+            $html .= '<th class="blue" style="width: 120px;">3. Transfer Bank</th>';
+            $html .= '<th class="amber" style="width: 140px;">4. Bon Pegawai RSIA (Potong Gaji)</th>';
+            $html .= '<th style="width: 140px;">TOTAL OMSET BERSIH</th>';
+            $html .= '</tr></thead><tbody>';
+
+            $no = 1;
+            $totCash = 0; $totQris = 0; $totTrf = 0; $totTempo = 0; $totNet = 0; $totTrx = 0;
+
+            foreach ($settlements as $s) {
+                $totCash += $s['cash'];
+                $totQris += $s['qris'];
+                $totTrf += $s['transfer'];
+                $totTempo += $s['tempo'];
+                $totNet += $s['net'];
+                $totTrx += $s['count'];
+
+                $html .= '<tr>';
+                $html .= '<td class="center">' . $no++ . '</td>';
+                $html .= '<td class="center bold">' . date('d/m/Y', strtotime($s['date'])) . '</td>';
+                $html .= '<td class="bold">' . htmlspecialchars($s['cashier_name']) . '</td>';
+                $html .= '<td class="center">' . $s['start_time'] . ' - ' . $s['end_time'] . '</td>';
+                $html .= '<td class="center bold">' . $s['count'] . '</td>';
+                $html .= '<td class="center" style="font-family:monospace; font-size:9pt;">' . $s['first_inv'] . ' s/d ' . $s['last_inv'] . '</td>';
+                $html .= '<td class="num bold" style="background-color: #f0fdf4; color: #166534;">' . $s['cash'] . '</td>';
+                $html .= '<td class="num" style="background-color: #eff6ff; color: #1e40af;">' . $s['qris'] . '</td>';
+                $html .= '<td class="num" style="background-color: #eff6ff; color: #1e40af;">' . $s['transfer'] . '</td>';
+                $html .= '<td class="num" style="background-color: #fefce8; color: #854d0e;">' . $s['tempo'] . '</td>';
+                $html .= '<td class="num bold" style="font-size:11pt;">' . $s['net'] . '</td>';
+                $html .= '</tr>';
+            }
+
+            $html .= '<tr class="total-row">';
+            $html .= '<td colspan="4" class="center bold">TOTAL KESELURUHAN</td>';
+            $html .= '<td class="center bold">' . $totTrx . '</td>';
+            $html .= '<td class="center">-</td>';
+            $html .= '<td class="num bold" style="background-color: #15803d !important; color:#ffffff !important;">' . $totCash . '</td>';
+            $html .= '<td class="num bold" style="background-color: #1d4ed8 !important; color:#ffffff !important;">' . $totQris . '</td>';
+            $html .= '<td class="num bold" style="background-color: #1d4ed8 !important; color:#ffffff !important;">' . $totTrf . '</td>';
+            $html .= '<td class="num bold" style="background-color: #b45309 !important; color:#ffffff !important;">' . $totTempo . '</td>';
+            $html .= '<td class="num bold" style="background-color: #0f172a !important; color:#ffffff !important;">' . $totNet . '</td>';
+            $html .= '</tr>';
+            $html .= '</tbody></table>';
+
+            // Lembar Tanda Tangan Serah Terima
+            $html .= '<br><br>';
+            $html .= '<table style="width: 100%; border: none; margin-top: 30px;">';
+            $html .= '<tr style="background: none;">';
+            $html .= '<td style="width: 50%; text-align: center; border: none; font-size: 11pt;">';
+            $html .= '<div>Diserahkan Oleh:</div>';
+            $html .= '<div style="font-weight: bold; margin-top: 5px;">Kasir Kantin RSIA</div>';
+            $html .= '<br><br><br><br>';
+            $html .= '<div style="text-decoration: underline; font-weight: bold;">( .................................................. )</div>';
+            $html .= '<div style="color: #64748b; font-size: 9pt;">Nama & Tanda Tangan Kasir</div>';
+            $html .= '</td>';
+            $html .= '<td style="width: 50%; text-align: center; border: none; font-size: 11pt;">';
+            $html .= '<div>Diterima & Diverifikasi Oleh:</div>';
+            $html .= '<div style="font-weight: bold; margin-top: 5px;">Bagian Keuangan RSIA Aisyiyah Pekajangan</div>';
+            $html .= '<br><br><br><br>';
+            $html .= '<div style="text-decoration: underline; font-weight: bold;">( .................................................. )</div>';
+            $html .= '<div style="color: #64748b; font-size: 9pt;">Nama & Tanda Tangan Bag. Keuangan</div>';
+            $html .= '</td>';
+            $html .= '</tr></table>';
 
             $html .= '</body></html>';
 

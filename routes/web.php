@@ -121,10 +121,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/receivables/{receivable}/pay', [EmployeeReceivableController::class, 'pay'])->name('receivables.pay');
     });
 
-    // Laporan, Pengaturan & Pengguna (Admin)
-    Route::middleware('role:admin')->group(function () {
+    // Laporan & Rekap Setoran Keuangan (Admin & Kasir)
+    Route::middleware('role:admin,kasir')->group(function () {
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/export-excel', [ReportController::class, 'exportExcel'])->name('reports.exportExcel');
+        Route::get('/reports/export-settlement', [ReportController::class, 'exportSettlementExcel'])->name('reports.exportSettlement');
+    });
+
+    // Pengaturan & Pengguna (Admin)
+    Route::middleware('role:admin')->group(function () {
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
 
