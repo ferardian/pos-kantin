@@ -4,7 +4,7 @@ import { Head, router } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import { appRoute } from '@/Utils/route';
 import { 
-    Banknote, QrCode, CreditCard, Clock, Calendar, 
+    Banknote, QrCode, Wallet, ArrowDownRight, Layers, CreditCard, Clock, Calendar, 
     FileSpreadsheet, Printer, Search, RefreshCw,
     Receipt, CheckCircle, AlertCircle, ShoppingBag,
     ArrowUpRight, User, Users, ShieldCheck, ChevronRight
@@ -128,7 +128,8 @@ const printDirect = () => {
     doc.open();
 
     const nowStr = new Date().toLocaleString('id-ID');
-    const terbilangCash = numberToWords(s.cash_total);
+    const netDeposit = s.net_cash_deposit !== undefined ? s.net_cash_deposit : s.cash_total;
+    const terbilangNetCash = numberToWords(netDeposit);
 
     let html = '';
     if (isThermal) {
@@ -186,22 +187,50 @@ body {
     <div class="row"><span>Jml Trx:</span><span class="val">${s.transaction_count} Nota</span></div>
 </div>
 <div class="dashed">
-    <div class="bold" style="margin-bottom: 2px;">RINCIAN PENERIMAAN KAS:</div>
-    <div class="row" style="background:#f0f0f0; padding: 2px 0;">
-        <span class="bold">1. SETOR TUNAI:</span>
-        <span class="val" style="font-size: 9pt;">${formatRupiah(s.cash_total)}</span>
+    <div class="bold" style="margin-bottom: 2px;">REKONSILIASI KAS SETORAN:</div>
+    <div class="row">
+        <span>Penerimaan Tunai Kasir:</span>
+        <span class="val">${formatRupiah(s.gross_cash_total || s.cash_total)}</span>
     </div>
-    <div class="row"><span>2. QRIS (Bank):</span><span class="val">${formatRupiah(s.qris_total)}</span></div>
-    <div class="row"><span>3. Transfer:</span><span class="val">${formatRupiah(s.transfer_total)}</span></div>
-    <div class="row"><span>4. Bon Pegawai:</span><span class="val">${formatRupiah(s.tempo_total)}</span></div>
+    ${(s.consignment_paid_total > 0) ? `
+    <div class="row" style="color: #b91c1c;">
+        <span>(-) Bayar Titipan Sore:</span>
+        <span class="val">(${formatRupiah(s.consignment_paid_total)})</span>
+    </div>` : ''}
+    <div class="row" style="background:#f0f0f0; padding: 2px 0; margin-top: 2px;">
+        <span class="bold">1. SETOR FISIK RSIA:</span>
+        <span class="val" style="font-size: 9pt;">${formatRupiah(netDeposit)}</span>
+    </div>
+    <div class="row" style="color: #555; font-size: 7.2pt;">
+        <span>2. QRIS (Rekening RS):</span><span class="val">${formatRupiah(s.qris_total)}</span>
+    </div>
+    <div class="row" style="color: #555; font-size: 7.2pt;">
+        <span>3. Transfer Bank:</span><span class="val">${formatRupiah(s.transfer_total)}</span>
+    </div>
+    <div class="row" style="color: #555; font-size: 7.2pt;">
+        <span>4. Bon Pegawai:</span><span class="val">${formatRupiah(s.tempo_total)}</span>
+    </div>
     <div class="row bold" style="border-top: 1px solid #000; padding-top: 2px; margin-top: 2px;">
         <span>TOTAL OMSET:</span><span class="val">${formatRupiah(s.total_net)}</span>
     </div>
 </div>
 <div class="dashed" style="font-size: 7pt; font-style: italic;">
-    <div>Terbilang Setor Tunai:</div>
-    <div class="bold">${terbilangCash}</div>
+    <div>Terbilang Wajib Setor Fisik:</div>
+    <div class="bold">${terbilangNetCash}</div>
 </div>
+${(s.consignment_settled_list && s.consignment_settled_list.length > 0) ? `
+<div class="dashed" style="font-size: 7pt;">
+    <div class="bold" style="margin-bottom: 2px;">STRUK BAYAR TITIPAN SORE:</div>
+    ${s.consignment_settled_list.map(c => `
+        <div class="row">
+            <span>${c.consignor_name} (${c.total_qty_sold}pcs)</span>
+            <span class="val" style="color:#b91c1c;">${formatRupiah(c.total_payable)}</span>
+        </div>
+    `).join('')}
+    <div class="row bold" style="border-top: 1px dashed #000; padding-top: 2px; margin-top: 2px;">
+        <span>TOTAL TITIPAN:</span><span class="val" style="color:#b91c1c;">${formatRupiah(s.consignment_paid_total)}</span>
+    </div>
+</div>` : ''}
 <div class="dashed">
     <div class="bold" style="margin-bottom: 2px;">RINCIAN BARANG TERJUAL:</div>
     ${itemsHtml}
@@ -570,70 +599,83 @@ ${cashierBreakdownA4}
                 </div>
             </div>
 
-            <!-- Financial Breakdown 4 Cards -->
+            <!-- Financial Breakdown 4 Cards (Opsi 1: Best Practice Rekonsiliasi Kasir) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
-                <!-- Card 1: SETOR TUNAI FISIK (HERO) -->
-                <div class="bg-gradient-to-br from-emerald-50 via-emerald-100/50 to-white border-2 border-emerald-500 rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <!-- Card 1: SETOR TUNAI BERSIH KE KEUANGAN RSIA (HERO) -->
+                <div class="bg-gradient-to-br from-emerald-50 via-emerald-100/60 to-white border-2 border-emerald-500 rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
                     <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
                     <div>
                         <div class="flex items-center justify-between">
                             <span class="text-[11px] font-black text-emerald-900 uppercase tracking-wider flex items-center gap-1">
                                 <Banknote class="w-4 h-4 text-emerald-700" />
-                                1. Setoran Tunai (Cash)
+                                1. Setor Fisik ke RSIA
                             </span>
-                            <span class="px-2 py-0.5 bg-emerald-600 text-white text-[9px] font-black rounded-full uppercase tracking-wider">
+                            <span class="px-2 py-0.5 bg-emerald-600 text-white text-[9px] font-black rounded-full uppercase tracking-wider shadow-2xs">
                                 Wajib Fisik
                             </span>
                         </div>
                         <div class="mt-3 text-2xl font-black text-emerald-950 font-mono tracking-tight">
-                            {{ formatRupiah(settlement.cash_total) }}
+                            {{ formatRupiah(settlement.net_cash_deposit !== undefined ? settlement.net_cash_deposit : settlement.cash_total) }}
                         </div>
-                        <div class="mt-1.5 text-[11px] text-emerald-800 italic line-clamp-2">
-                            "{{ numberToWords(settlement.cash_total) }}"
+                        <div class="mt-1 text-[10px] text-emerald-800 font-medium">
+                            Tunai Masuk: <strong>{{ formatRupiah(settlement.gross_cash_total || settlement.cash_total) }}</strong>
+                            <span v-if="settlement.consignment_paid_total > 0" class="text-rose-700"> • Bayar Titipan: -{{ formatRupiah(settlement.consignment_paid_total) }}</span>
+                        </div>
+                        <div class="mt-1.5 text-[10px] text-emerald-800 italic line-clamp-2">
+                            "{{ numberToWords(settlement.net_cash_deposit !== undefined ? settlement.net_cash_deposit : settlement.cash_total) }}"
                         </div>
                     </div>
-
                 </div>
 
-                <!-- Card 2: QRIS Bank -->
+                <!-- Card 2: Pengeluaran Bayar Titipan Sore (Konsinyasi) -->
+                <div class="bg-gradient-to-br from-amber-50/60 via-amber-100/30 to-white border border-amber-300 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1">
+                                <ShoppingBag class="w-4 h-4 text-amber-700" />
+                                2. Bayar Titipan Sore
+                            </span>
+                            <span class="px-2 py-0.5 bg-amber-100 text-amber-900 text-[9px] font-bold rounded-full border border-amber-300">
+                                Lampiran Struk
+                            </span>
+                        </div>
+                        <div class="mt-3 text-2xl font-black text-amber-950 font-mono tracking-tight">
+                            {{ formatRupiah(settlement.consignment_paid_total || 0) }}
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            {{ settlement.consignment_settled_list?.length || 0 }} penitip dilunasi kasir sore ini
+                        </p>
+                    </div>
+                    <div class="text-[10px] text-amber-800 font-medium pt-2 border-t border-amber-200/60">
+                        Struk pelunasan dilampirkan ke Keuangan
+                    </div>
+                </div>
+
+                <!-- Card 3: Non-Tunai (QRIS & Transfer Bank) -->
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between">
                             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                                 <QrCode class="w-4 h-4 text-blue-600" />
-                                2. QRIS Bank
+                                3. QRIS & Transfer Bank
                             </span>
                             <span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-[9px] font-bold rounded-full border border-blue-200">
                                 Rekening RS
                             </span>
                         </div>
                         <div class="mt-3 text-2xl font-black text-slate-900 font-mono tracking-tight">
-                            {{ formatRupiah(settlement.qris_total) }}
+                            {{ formatRupiah(settlement.non_cash_total || (settlement.qris_total + settlement.transfer_total)) }}
                         </div>
-                        
+                        <div class="mt-1 text-[10px] text-slate-500 flex items-center gap-2">
+                            <span>QRIS: <strong class="text-slate-700 font-mono">{{ formatRupiah(settlement.qris_total) }}</strong></span>
+                            <span>•</span>
+                            <span>TF: <strong class="text-slate-700 font-mono">{{ formatRupiah(settlement.transfer_total) }}</strong></span>
+                        </div>
                     </div>
-
-                </div>
-
-                <!-- Card 3: Transfer Bank -->
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                <CreditCard class="w-4 h-4 text-purple-600" />
-                                3. Transfer Bank
-                            </span>
-                            <span class="px-2 py-0.5 bg-purple-50 text-purple-700 text-[9px] font-bold rounded-full border border-purple-200">
-                                Rekening RS
-                            </span>
-                        </div>
-                        <div class="mt-3 text-2xl font-black text-slate-900 font-mono tracking-tight">
-                            {{ formatRupiah(settlement.transfer_total) }}
-                        </div>
-                        
+                    <div class="text-[10px] text-slate-400 pt-2 border-t border-slate-100">
+                        Otomatis masuk ke rekening RSIA
                     </div>
-
                 </div>
 
                 <!-- Card 4: Bon Pegawai RSIA (Tempo) -->
@@ -651,11 +693,152 @@ ${cashierBreakdownA4}
                         <div class="mt-3 text-2xl font-black text-amber-900 font-mono tracking-tight">
                             {{ formatRupiah(settlement.tempo_total) }}
                         </div>
-                        
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            Piutang belanja pegawai rumah sakit
+                        </p>
                     </div>
-
+                    <div class="text-[10px] text-slate-400 pt-2 border-t border-slate-100">
+                        Diserahkan ke SDM/Keuangan via potong gaji
+                    </div>
                 </div>
 
+            </div>
+
+            <!-- Rekonsiliasi Kas Bersih Kasir Banner (Penjelasan Pertanggungjawaban) -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-700 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 font-black text-[10px] uppercase rounded-full tracking-wider border border-emerald-500/30">
+                            Rekonsiliasi Kas Laci Kasir
+                        </span>
+                        <span class="text-xs text-slate-300 font-medium">Model Setoran Bersih RSIA</span>
+                    </div>
+                    <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                        Uang tunai hasil penjualan jajan titipan digunakan kasir untuk <strong>melunasi hak penitip di sore hari</strong>. Kasir menyetorkan <strong>Uang Tunai Fisik Bersih</strong> ke Keuangan RSIA ditambah <strong>Lampiran Bukti Struk Pelunasan</strong>.
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2 sm:gap-3 flex-wrap bg-black/30 p-3 rounded-xl border border-white/10 text-xs shrink-0">
+                    <div class="text-right">
+                        <div class="text-[10px] text-slate-400">Penerimaan Kasir</div>
+                        <div class="font-bold text-white font-mono">{{ formatRupiah(settlement.gross_cash_total || settlement.cash_total) }}</div>
+                    </div>
+                    <div class="text-slate-400 font-black">-</div>
+                    <div class="text-right">
+                        <div class="text-[10px] text-rose-300">Bayar Titipan</div>
+                        <div class="font-bold text-rose-300 font-mono">({{ formatRupiah(settlement.consignment_paid_total || 0) }})</div>
+                    </div>
+                    <div class="text-slate-400 font-black">=</div>
+                    <div class="text-right bg-emerald-600 px-3 py-1.5 rounded-lg shadow-sm">
+                        <div class="text-[9px] text-emerald-100 font-bold uppercase tracking-wider">Setor Fisik ke RSIA</div>
+                        <div class="text-sm font-black text-white font-mono">{{ formatRupiah(settlement.net_cash_deposit !== undefined ? settlement.net_cash_deposit : settlement.cash_total) }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pemisahan Porsi Omzet Toko Sendiri vs Jajan Titipan Konsinyasi -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Box 1: Barang Kantin Sendiri -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                                <Layers class="w-4 h-4" />
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Barang Toko Sendiri</h3>
+                                <p class="text-[11px] text-slate-500">Barang inventaris & kulakan kantin RSIA</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-md">
+                            100% Hak RSIA
+                        </span>
+                    </div>
+                    <div class="text-xl font-black text-slate-900 font-mono">
+                        {{ formatRupiah(settlement.own_products_sales || 0) }}
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        Seluruh hasil penjualan barang ini murni menjadi pendapatan kas kantin RSIA.
+                    </p>
+                </div>
+
+                <!-- Box 2: Jajan Titipan (Konsinyasi) -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                                <ShoppingBag class="w-4 h-4" />
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Barang Titipan (Konsinyasi)</h3>
+                                <p class="text-[11px] text-slate-500">Kue basah, jajan pasar & snack mitra luar</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 bg-amber-50 text-amber-900 text-[10px] font-bold rounded-md">
+                            Bagi Hasil
+                        </span>
+                    </div>
+                    <div class="text-xl font-black text-slate-900 font-mono">
+                        {{ formatRupiah(settlement.consignment_sales || 0) }}
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <span class="text-slate-500">Porsi Hak Penitip: <strong class="text-rose-700 font-mono">{{ formatRupiah(settlement.consignment_payable || 0) }}</strong></span>
+                        <span class="text-slate-500">Margin Kantin: <strong class="text-emerald-700 font-mono">+{{ formatRupiah(settlement.consignment_margin || 0) }}</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Rincian Pelunasan Titipan Sore Hari Ini (Lampiran Struk Kasir) -->
+            <div v-if="settlement.consignment_settled_list && settlement.consignment_settled_list.length > 0" class="bg-white border border-amber-200/80 rounded-2xl shadow-xs overflow-hidden">
+                <div class="p-4 sm:p-5 bg-gradient-to-r from-amber-50/70 to-white border-b border-amber-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-sm font-black text-amber-950 flex items-center gap-2">
+                            <Receipt class="w-4 h-4 text-amber-700" />
+                            <span>Lampiran Struk: Rincian Pelunasan Jajan Titipan Sore</span>
+                        </h2>
+                        <p class="text-xs text-amber-800/80 mt-0.5">
+                            Daftar pengeluaran kas laci kasir untuk membayar penitip kue sore ini (struk dilampirkan ke Keuangan)
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] text-slate-500 uppercase font-semibold">Total Titipan Dilunasi:</div>
+                        <div class="text-base font-black text-rose-700 font-mono">
+                            {{ formatRupiah(settlement.consignment_paid_total) }}
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-amber-50/50 text-amber-900 border-b border-amber-100 font-semibold uppercase text-[10px] tracking-wider">
+                                <th class="py-2.5 px-4 w-12 text-center">No</th>
+                                <th class="py-2.5 px-4">No Batch Titipan</th>
+                                <th class="py-2.5 px-4">Nama Penitip</th>
+                                <th class="py-2.5 px-4 text-center">Jam Bayar</th>
+                                <th class="py-2.5 px-4">Kasir Pembayar</th>
+                                <th class="py-2.5 px-4 text-center">Pcs Terjual</th>
+                                <th class="py-2.5 px-4 text-right">Uang Dibayar (Rp)</th>
+                                <th class="py-2.5 px-4 text-right">Laba Kantin (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            <tr v-for="(cs, idx) in settlement.consignment_settled_list" :key="cs.id" class="hover:bg-amber-50/30 transition">
+                                <td class="py-3 px-4 text-center font-mono text-slate-400">{{ idx + 1 }}</td>
+                                <td class="py-3 px-4 font-mono font-bold text-slate-900">{{ cs.batch_number }}</td>
+                                <td class="py-3 px-4 font-black text-slate-900">{{ cs.consignor_name }}</td>
+                                <td class="py-3 px-4 text-center font-mono text-slate-600">{{ cs.settlement_time }} WIB</td>
+                                <td class="py-3 px-4 text-slate-600">{{ cs.cashier_name }}</td>
+                                <td class="py-3 px-4 text-center font-bold text-blue-700">{{ cs.total_qty_sold }} pcs</td>
+                                <td class="py-3 px-4 text-right font-mono font-black text-rose-700 bg-rose-50/30">
+                                    {{ formatRupiah(cs.total_payable) }}
+                                </td>
+                                <td class="py-3 px-4 text-right font-mono font-bold text-emerald-700">
+                                    +{{ formatRupiah(cs.total_canteen_profit) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Tabel Tambahan jika Memilih Rekap Semua Kasir: Breakdown per Kasir -->
@@ -681,9 +864,10 @@ ${cashierBreakdownA4}
                                 <th class="py-2.5 px-4 w-12 text-center">No</th>
                                 <th class="py-2.5 px-4">Nama Petugas Kasir</th>
                                 <th class="py-2.5 px-4 text-center">Jml Nota</th>
-                                <th class="py-2.5 px-4 text-right">Setoran Tunai (Fisik)</th>
-                                <th class="py-2.5 px-4 text-right">QRIS Bank</th>
-                                <th class="py-2.5 px-4 text-right">Bon Pegawai</th>
+                                <th class="py-2.5 px-4 text-right">Tunai Bruto</th>
+                                <th class="py-2.5 px-4 text-right">Bayar Titipan</th>
+                                <th class="py-2.5 px-4 text-right">Net Setor Fisik</th>
+                                <th class="py-2.5 px-4 text-right">Non-Tunai</th>
                                 <th class="py-2.5 px-4 text-right">Total Omset Kasir</th>
                                 <th class="py-2.5 px-4 text-center w-24">Aksi</th>
                             </tr>
@@ -693,11 +877,17 @@ ${cashierBreakdownA4}
                                 <td class="py-3 px-4 text-center font-mono text-slate-400">{{ idx + 1 }}</td>
                                 <td class="py-3 px-4 font-black text-slate-900">{{ cb.cashier_name }}</td>
                                 <td class="py-3 px-4 text-center font-bold text-slate-600">{{ cb.transaction_count }}</td>
-                                <td class="py-3 px-4 text-right font-mono font-bold text-emerald-700 bg-emerald-50/40">
+                                <td class="py-3 px-4 text-right font-mono text-slate-700">
                                     {{ formatRupiah(cb.cash_total) }}
                                 </td>
-                                <td class="py-3 px-4 text-right font-mono text-slate-700">{{ formatRupiah(cb.qris_total) }}</td>
-                                <td class="py-3 px-4 text-right font-mono text-amber-800">{{ formatRupiah(cb.tempo_total) }}</td>
+                                <td class="py-3 px-4 text-right font-mono text-rose-700">
+                                    <span v-if="cb.consignment_paid > 0">({{ formatRupiah(cb.consignment_paid) }})</span>
+                                    <span v-else class="text-slate-300">-</span>
+                                </td>
+                                <td class="py-3 px-4 text-right font-mono font-black text-emerald-800 bg-emerald-50/50">
+                                    {{ formatRupiah(cb.net_cash_deposit !== undefined ? cb.net_cash_deposit : cb.cash_total) }}
+                                </td>
+                                <td class="py-3 px-4 text-right font-mono text-slate-700">{{ formatRupiah(cb.qris_total + cb.transfer_total) }}</td>
                                 <td class="py-3 px-4 text-right font-mono font-black text-slate-900">{{ formatRupiah(cb.total_net) }}</td>
                                 <td class="py-3 px-4 text-center">
                                     <button 
@@ -889,10 +1079,20 @@ ${cashierBreakdownA4}
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200">
-                                    <tr class="bg-emerald-50/80 font-bold text-emerald-950">
+                                    <tr>
                                         <td class="p-2 text-center">1</td>
-                                        <td class="p-2">UANG TUNAI / CASH (WAJIB SETOR FISIK)</td>
-                                        <td class="p-2 text-right font-mono">{{ formatRupiah(settlement.cash_total) }}</td>
+                                        <td class="p-2 font-medium">Penerimaan Tunai Kasir (Gross Cash)</td>
+                                        <td class="p-2 text-right font-mono">{{ formatRupiah(settlement.gross_cash_total || settlement.cash_total) }}</td>
+                                    </tr>
+                                    <tr class="bg-rose-50/50 text-rose-800">
+                                        <td class="p-2 text-center">2</td>
+                                        <td class="p-2">(-) Pengeluaran Bayar Titipan Sore (Struk Terlampir)</td>
+                                        <td class="p-2 text-right font-mono font-bold">({{ formatRupiah(settlement.consignment_paid_total || 0) }})</td>
+                                    </tr>
+                                    <tr class="bg-emerald-50/90 font-black text-emerald-950">
+                                        <td class="p-2 text-center">=</td>
+                                        <td class="p-2 uppercase tracking-wide">TOTAL UANG FISIK WAJIB DISETOR KE RSIA</td>
+                                        <td class="p-2 text-right font-mono text-sm text-emerald-900">{{ formatRupiah(settlement.net_cash_deposit !== undefined ? settlement.net_cash_deposit : settlement.cash_total) }}</td>
                                     </tr>
                                     <tr>
                                         <td class="p-2 text-center">2</td>
@@ -919,7 +1119,7 @@ ${cashierBreakdownA4}
 
                         <div class="p-2.5 bg-emerald-50/80 border border-emerald-200 rounded-xl text-[11px]">
                             <span class="text-emerald-900 font-bold block">Terbilang Uang Tunai yang Disetorkan:</span>
-                            <span class="text-emerald-950 font-black italic block">"{{ numberToWords(settlement.cash_total) }}"</span>
+                            <span class="text-emerald-950 font-black italic block">"{{ numberToWords(settlement.net_cash_deposit !== undefined ? settlement.net_cash_deposit : settlement.cash_total) }}"</span>
                         </div>
 
                         <!-- Table Items Preview -->
@@ -986,9 +1186,17 @@ ${cashierBreakdownA4}
                         <div class="border-t border-dashed border-slate-400 my-1.5"></div>
 
                         <div class="space-y-1 text-[10px]">
-                            <div class="flex justify-between bg-slate-100 p-1 rounded font-bold">
-                                <span>1. SETOR TUNAI:</span>
-                                <span class="text-emerald-700 text-xs">{{ formatRupiah(settlement.cash_total) }}</span>
+                            <div class="flex justify-between">
+                                <span>Penerimaan Kasir:</span>
+                                <span>{{ formatRupiah(settlement.gross_cash_total || settlement.cash_total) }}</span>
+                            </div>
+                            <div v-if="settlement.consignment_paid_total > 0" class="flex justify-between text-rose-700 font-medium">
+                                <span>(-) Bayar Titipan:</span>
+                                <span>({{ formatRupiah(settlement.consignment_paid_total) }})</span>
+                            </div>
+                            <div class="flex justify-between bg-emerald-50 p-1 rounded font-black text-emerald-900">
+                                <span>SETOR FISIK RSIA:</span>
+                                <span class="text-xs">{{ formatRupiah(settlement.net_cash_deposit !== undefined ? settlement.net_cash_deposit : settlement.cash_total) }}</span>
                             </div>
                             <div class="flex justify-between"><span>2. QRIS (Bank):</span> <span>{{ formatRupiah(settlement.qris_total) }}</span></div>
                             <div class="flex justify-between"><span>3. Transfer:</span> <span>{{ formatRupiah(settlement.transfer_total) }}</span></div>
