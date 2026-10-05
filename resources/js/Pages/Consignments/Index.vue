@@ -1409,25 +1409,26 @@ const filteredSettledBatches = computed(() => {
         <!-- ============================================================= -->
         <!-- MODAL: TERIMA TITIPAN BARU (PAGI) -->
         <!-- ============================================================= -->
-        <div v-if="isNewBatchModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-            <div class="bg-white w-full max-w-3xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden my-8">
+        <div v-if="isNewBatchModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+            <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] my-auto">
                 <!-- Header -->
-                <div class="p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 flex items-center justify-between">
+                <div class="p-4 sm:p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0">
                             <PackageCheck class="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 class="text-lg font-black text-slate-900">Terima Titipan Jajan Baru (Pagi)</h3>
+                            <h3 class="text-base sm:text-lg font-black text-slate-900">Terima Titipan Jajan Baru (Pagi)</h3>
                             <p class="text-xs text-slate-500 font-medium">Input jajan yang dititipkan pagi ini. Stok fisik POS akan langsung bertambah.</p>
                         </div>
                     </div>
-                    <button @click="isNewBatchModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-white/60 cursor-pointer">
+                    <button @click="isNewBatchModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-white/60 cursor-pointer transition">
                         <X class="w-5 h-5" />
                     </button>
                 </div>
 
-                <form @submit.prevent="submitNewBatch" class="p-6 space-y-5">
+                <form @submit.prevent="submitNewBatch" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+                    <div class="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
                     <!-- Top Form: Consignor & Date -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -1602,11 +1603,13 @@ const filteredSettledBatches = computed(() => {
                     </div>
 
                     <!-- Modal Actions -->
-                    <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3 shrink-0">
                         <button 
                             type="button" 
                             @click="isNewBatchModalOpen = false"
-                            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition cursor-pointer"
+                            class="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-sm rounded-xl transition cursor-pointer"
                         >
                             Batal
                         </button>
@@ -1626,28 +1629,29 @@ const filteredSettledBatches = computed(() => {
         <!-- ============================================================= -->
         <!-- MODAL: TAMBAH TITIPAN SUSULAN -->
         <!-- ============================================================= -->
-        <div v-if="isAddItemsModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-            <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-amber-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
+        <div v-if="isAddItemsModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+            <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-amber-200 overflow-hidden flex flex-col max-h-[92vh] my-auto animate-in fade-in zoom-in-95 duration-150">
                 <!-- Header -->
-                <div class="p-5 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/60 border-b border-amber-200 flex items-center justify-between">
+                <div class="p-4 sm:p-5 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/60 border-b border-amber-200 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
+                        <div class="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs shrink-0">
                             <PlusCircle class="w-5 h-5" />
                         </div>
                         <div>
                             <h3 class="text-base font-black text-slate-900">Tambah Jajan Susulan Hari Ini</h3>
                             <p class="text-xs text-amber-800 font-semibold">
                                 Penitip: <strong class="text-slate-900">{{ targetBatchForAdd?.consignor?.name }}</strong> 
-                                • Batch: <span class="font-mono">{{ targetBatchForAdd?.batch_number }}</span>
+                                • Batch: <span class="font-mono font-bold">{{ targetBatchForAdd?.batch_number }}</span>
                             </p>
                         </div>
                     </div>
-                    <button @click="isAddItemsModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-white/60 cursor-pointer">
+                    <button @click="isAddItemsModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-white/60 cursor-pointer transition">
                         <X class="w-5 h-5" />
                     </button>
                 </div>
 
-                <form @submit.prevent="submitAddItems" class="p-6 space-y-5">
+                <form @submit.prevent="submitAddItems" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+                    <div class="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
                     <!-- Informative Banner -->
                     <div class="p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl flex items-start gap-2.5">
                         <Sparkles class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -1773,12 +1777,14 @@ const filteredSettledBatches = computed(() => {
                         </div>
                     </div>
 
+                    </div>
+
                     <!-- Modal Actions -->
-                    <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                    <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3 shrink-0">
                         <button 
                             type="button" 
                             @click="isAddItemsModalOpen = false"
-                            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition cursor-pointer"
+                            class="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-sm rounded-xl transition cursor-pointer"
                         >
                             Batal
                         </button>
@@ -2243,28 +2249,30 @@ const filteredSettledBatches = computed(() => {
         <!-- ============================================================= -->
         <!-- MODAL: HITUNG & BAYAR SORE (SETTLEMENT) -->
         <!-- ============================================================= -->
-        <div v-if="isSettleModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-            <div class="bg-white w-full max-w-3xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden my-8">
-                <!-- Header -->
-                <div class="p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100 flex items-center justify-between">
+        <div v-if="isSettleModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+            <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] my-auto">
+                <!-- Header (Sticky top) -->
+                <div class="p-4 sm:p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
                             <Wallet class="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 class="text-lg font-black text-slate-900">Hitung & Bayar Titipan (Pelunasan Sore)</h3>
+                            <h3 class="text-base sm:text-lg font-black text-slate-900">Hitung & Bayar Titipan (Pelunasan Sore)</h3>
                             <p class="text-xs text-slate-500 font-medium">
-                                Penitip: <strong>{{ selectedBatchForSettle?.consignor?.name }}</strong> 
-                                • No: <span class="font-mono">{{ selectedBatchForSettle?.batch_number }}</span>
+                                Penitip: <strong class="text-slate-900">{{ selectedBatchForSettle?.consignor?.name }}</strong> 
+                                • No: <span class="font-mono text-emerald-800 font-bold">{{ selectedBatchForSettle?.batch_number }}</span>
                             </p>
                         </div>
                     </div>
-                    <button @click="isSettleModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-white/60 cursor-pointer">
+                    <button @click="isSettleModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-white/60 cursor-pointer transition">
                         <X class="w-5 h-5" />
                     </button>
                 </div>
 
-                <form @submit.prevent="submitSettle" class="p-6 space-y-5">
+                <form @submit.prevent="submitSettle" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+                    <!-- Scrollable Body -->
+                    <div class="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
                     <div class="bg-emerald-50/70 border border-emerald-200 p-3.5 rounded-xl text-xs text-emerald-900 flex items-center gap-2.5">
                         <Sparkles class="w-5 h-5 text-emerald-600 shrink-0" />
                         <div>
@@ -2273,18 +2281,19 @@ const filteredSettledBatches = computed(() => {
                     </div>
 
                     <!-- Items Calculation Table -->
-                    <div class="border border-slate-200 rounded-xl overflow-hidden">
-                        <table class="w-full text-left text-sm">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-600 font-bold text-xs uppercase tracking-wider border-b border-slate-200">
-                                    <th class="py-3 px-3.5">Nama Jajan</th>
-                                    <th class="py-3 px-3 text-center">Dititip</th>
-                                    <th class="py-3 px-3 text-center bg-amber-50 text-amber-900">Sisa Fisik (Retur)</th>
-                                    <th class="py-3 px-3 text-center">Terjual</th>
-                                    <th class="py-3 px-3 text-right">Harga Setor</th>
-                                    <th class="py-3 px-3.5 text-right">Hak Penitip</th>
-                                </tr>
-                            </thead>
+                    <div class="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                        <div class="max-h-[340px] overflow-y-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="sticky top-0 z-10">
+                                    <tr class="bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider border-b border-slate-200">
+                                        <th class="py-3 px-3.5 bg-slate-100">Nama Jajan</th>
+                                        <th class="py-3 px-3 text-center bg-slate-100">Dititip</th>
+                                        <th class="py-3 px-3 text-center bg-amber-100 text-amber-950 font-black">Sisa Fisik (Retur)</th>
+                                        <th class="py-3 px-3 text-center bg-slate-100">Terjual</th>
+                                        <th class="py-3 px-3 text-right bg-slate-100">Harga Setor</th>
+                                        <th class="py-3 px-3.5 text-right bg-slate-100">Hak Penitip</th>
+                                    </tr>
+                                </thead>
                             <tbody class="divide-y divide-slate-100">
                                 <tr v-for="(item, idx) in settleForm.items" :key="item.id" class="hover:bg-slate-50/50">
                                     <td class="py-3 px-3.5 font-bold text-slate-900">
@@ -2323,6 +2332,7 @@ const filteredSettledBatches = computed(() => {
                                 </tr>
                             </tbody>
                         </table>
+                        </div>
                     </div>
 
                     <!-- Settle Summary Cards -->
@@ -2370,12 +2380,14 @@ const filteredSettledBatches = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                    </div>
+
+                    <!-- Sticky Footer Actions -->
+                    <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3 shrink-0">
                         <button 
                             type="button" 
                             @click="isSettleModalOpen = false"
-                            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition cursor-pointer"
+                            class="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-sm rounded-xl transition cursor-pointer"
                         >
                             Batal
                         </button>
