@@ -421,17 +421,40 @@ const openSettleModal = (batch) => {
     const defaultBox = (props.cashboxes || []).find(b => b.is_default) || (props.cashboxes || [])[0];
     settleForm.cashbox_id = defaultBox ? defaultBox.id : '';
 
-    settleForm.items = batch.items.map(it => ({
-        id: it.id,
-        name: it.product ? it.product.name : 'Jajan',
-        qty_dropped: Number(it.qty_dropped),
-        qty_returned: 0,
-        cost_price: Number(it.cost_price),
-        selling_price: Number(it.selling_price),
-        current_stock: it.current_stock ?? 0,
-    }));
+    settleForm.items = batch.items.map(it => {
+        const dropped = Number(it.qty_dropped) || 0;
+        const currentStock = Math.max(0, Number(it.current_stock ?? 0));
+        // Default otomatis: sisa fisik = sisa stok fisik di kasir POS (tidak melebihi jumlah dititip)
+        const autoReturned = Math.min(dropped, currentStock);
+
+        return {
+            id: it.id,
+            name: it.product ? it.product.name : 'Jajan',
+            qty_dropped: dropped,
+            qty_returned: autoReturned,
+            cost_price: Number(it.cost_price),
+            selling_price: Number(it.selling_price),
+            current_stock: it.current_stock ?? 0,
+        };
+    });
 
     isSettleModalOpen.value = true;
+};
+
+const applyPosStockToAll = () => {
+    if (!settleForm.items) return;
+    settleForm.items.forEach(it => {
+        const dropped = Number(it.qty_dropped) || 0;
+        const currentStock = Math.max(0, Number(it.current_stock ?? 0));
+        it.qty_returned = Math.min(dropped, currentStock);
+    });
+};
+
+const setAllSoldOut = () => {
+    if (!settleForm.items) return;
+    settleForm.items.forEach(it => {
+        it.qty_returned = 0;
+    });
 };
 
 const settleCalculations = computed(() => {
@@ -2273,10 +2296,31 @@ const filteredSettledBatches = computed(() => {
                 <form @submit.prevent="submitSettle" class="flex flex-col flex-1 min-h-0 overflow-hidden">
                     <!-- Scrollable Body -->
                     <div class="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
-                    <div class="bg-emerald-50/70 border border-emerald-200 p-3.5 rounded-xl text-xs text-emerald-900 flex items-center gap-2.5">
-                        <Sparkles class="w-5 h-5 text-emerald-600 shrink-0" />
-                        <div>
-                            <strong>Instruksi Kasir:</strong> Cukup masukkan <strong>Sisa Fisik</strong> jajan yang tersisa sore ini dan dibawa pulang oleh penitip. Sistem akan otomatis menghitung jumlah terjual, uang hak penitip, dan laba kantin.
+                    <div class="bg-emerald-50/90 border border-emerald-200 p-3.5 rounded-xl text-xs text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                        <div class="flex items-start sm:items-center gap-2.5">
+                            <Sparkles class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
+                            <div>
+                                <strong class="text-emerald-900">Otomatis Terhitung dari Penjualan POS:</strong>
+                                <span class="text-slate-600 block sm:inline sm:ml-1">Sisa jajan sudah otomatis diisi dari sisa stok kasir hari ini. Silakan cocokkan dengan fisik kue di etalase.</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                            <button 
+                                type="button" 
+                                @click="applyPosStockToAll"
+                                class="px-2.5 py-1.5 bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-[11px] rounded-lg transition cursor-pointer shadow-2xs"
+                                title="Reset sisa fisik sesuai stok yang tersisa di POS kasir"
+                            >
+                                Sesuai Stok POS
+                            </button>
+                            <button 
+                                type="button" 
+                                @click="setAllSoldOut"
+                                class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-[11px] rounded-lg transition cursor-pointer shadow-2xs"
+                                title="Set semua sisa jajan menjadi 0 (terjual habis)"
+                            >
+                                Habis Semua (Sisa 0)
+                            </button>
                         </div>
                     </div>
 
@@ -2316,8 +2360,17 @@ const filteredSettledBatches = computed(() => {
                                                 class="w-16 px-2 py-1.5 bg-white border border-amber-300 rounded-lg text-center font-black text-amber-900 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-xs"
                                             />
                                         </div>
-                                        <div class="text-[10px] text-slate-400 mt-0.5">
-                                            Stok POS: {{ item.current_stock }}
+                                        <div class="text-[10px] text-slate-500 mt-0.5 flex items-center justify-center gap-1">
+                                            <span>Stok POS: <strong class="text-slate-700">{{ item.current_stock }}</strong></span>
+                                            <button 
+                                                v-if="item.qty_returned !== Math.min(item.qty_dropped, Math.max(0, Number(item.current_stock || 0)))"
+                                                type="button"
+                                                @click="item.qty_returned = Math.min(item.qty_dropped, Math.max(0, Number(item.current_stock || 0)))"
+                                                class="text-[9px] text-emerald-700 underline hover:text-emerald-900 cursor-pointer font-bold"
+                                                title="Samakan dengan sisa stok POS"
+                                            >
+                                                (reset)
+                                            </button>
                                         </div>
                                     </td>
                                     <td class="py-3 px-3 text-center font-black text-blue-700">
