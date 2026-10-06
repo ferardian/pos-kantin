@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeReceivableController;
 use App\Http\Controllers\GoodsReceiptController;
+use App\Http\Controllers\CanteenOrderManageController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
@@ -67,6 +68,13 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:kasir')->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'store'])->name('pos.checkout');
+    });
+
+    // Pesanan Online Karyawan (Dari Mess / Ruangan)
+    Route::middleware('role:kasir')->group(function () {
+        Route::get('/canteen-orders', [CanteenOrderManageController::class, 'index'])->name('canteen-orders.index');
+        Route::post('/canteen-orders/{id}/status', [CanteenOrderManageController::class, 'updateStatus'])->name('canteen-orders.update-status');
+        Route::get('/canteen-orders/check-pending', [CanteenOrderManageController::class, 'checkPendingCount'])->name('canteen-orders.check-pending');
     });
 
     // Penerimaan Barang (Belanja Stok Masuk) & Master Supplier

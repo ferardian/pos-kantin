@@ -49,6 +49,7 @@ class HandleInertiaRequests extends Middleware
             'pendingOrdersCount' => 0,
             'pendingReceivablesCount' => fn () => Auth::check() ? EmployeeReceivable::whereIn('status', ['unpaid', 'partial'])->count() : 0,
             'pendingGoodsReceiptsCount' => fn () => (Auth::check() && Auth::user()->role === 'admin') ? GoodsReceipt::where('status', 'pending')->count() : 0,
+            'pendingCanteenOrdersCount' => fn () => Auth::check() ? \App\Models\CanteenOrder::where('status', 'pending')->count() : 0,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

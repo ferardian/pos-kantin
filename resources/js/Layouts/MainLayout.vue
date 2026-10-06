@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { appRoute } from '@/Utils/route';
 import { 
-    Truck, Store, ShoppingCart, ClipboardList, ClipboardCheck, Package, Users, BarChart3, 
+    Truck, Store, ShoppingCart, BellRing, ClipboardList, ClipboardCheck, Package, Users, BarChart3, 
     LogOut, CheckCircle, AlertTriangle, Shield,
     RotateCcw, Settings, Menu, X, ArrowLeftRight,
     LayoutDashboard, Wallet, UserCog,
@@ -33,6 +33,14 @@ const toggleSidebar = () => {
 const allNavigation = computed(() => [
     { name: 'Dashboard', href: appRoute('/dashboard'), rawPath: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'kasir'] },
     { name: 'Kasir POS', href: appRoute('/pos'), rawPath: '/pos', icon: ShoppingCart, roles: ['admin', 'kasir'] },
+    { 
+        name: 'Pesanan Online', 
+        href: appRoute('/canteen-orders'), 
+        rawPath: '/canteen-orders', 
+        icon: BellRing, 
+        roles: ['admin', 'kasir'],
+        badge: Number(page.props.pendingCanteenOrdersCount || 0)
+    },
     { name: 'Titip Jual (Konsinyasi)', href: appRoute('/consignments'), rawPath: '/consignments', icon: Store, roles: ['admin', 'kasir'] },
     { 
         name: 'Penerimaan Barang', 
