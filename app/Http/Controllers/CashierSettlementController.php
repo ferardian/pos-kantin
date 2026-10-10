@@ -202,12 +202,12 @@ class CashierSettlementController extends Controller
             }
 
             $itemsSold = $rawItems->groupBy(function ($i) {
-                return $i->product_id . '_' . $i->product_unit_id;
+                return $i->product_id . '_' . $i->product_unit_id . '_' . (float) $i->unit_price;
             })->map(function ($group) {
                 $first = $group->first();
                 $totalQty = $group->sum('qty');
                 $totalSubtotal = $group->sum('subtotal');
-                $avgPrice = $totalQty > 0 ? $totalSubtotal / $totalQty : $first->unit_price;
+                $avgPrice = (float) $first->unit_price;
 
                 return [
                     'product_id' => $first->product_id,

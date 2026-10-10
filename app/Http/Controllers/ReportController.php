@@ -214,11 +214,11 @@ class ReportController extends Controller
                 ->select(
                     'product_id',
                     'product_unit_id',
+                    'unit_price',
                     DB::raw('SUM(qty) as total_qty'),
-                    DB::raw('SUM(subtotal) as total_subtotal'),
-                    DB::raw('AVG(unit_price) as avg_price')
+                    DB::raw('SUM(subtotal) as total_subtotal')
                 )
-                ->groupBy('product_id', 'product_unit_id')
+                ->groupBy('product_id', 'product_unit_id', 'unit_price')
                 ->get()
                 ->map(function ($it) {
                     return [
@@ -226,7 +226,7 @@ class ReportController extends Controller
                         'product_name' => $it->product ? $it->product->name : 'Item Terhapus',
                         'category_name' => $it->product && $it->product->category ? $it->product->category->name : 'Umum',
                         'unit_name' => $it->unit ? $it->unit->unit_name : 'Pcs',
-                        'avg_price' => (float) $it->avg_price,
+                        'avg_price' => (float) $it->unit_price,
                         'total_qty' => (float) $it->total_qty,
                         'total_subtotal' => (float) $it->total_subtotal,
                     ];
@@ -587,18 +587,18 @@ class ReportController extends Controller
             ->select(
                 'product_id',
                 'product_unit_id',
+                'unit_price',
                 DB::raw('SUM(qty) as total_qty'),
-                DB::raw('SUM(subtotal) as total_subtotal'),
-                DB::raw('AVG(unit_price) as avg_price')
+                DB::raw('SUM(subtotal) as total_subtotal')
             )
-            ->groupBy('product_id', 'product_unit_id')
+            ->groupBy('product_id', 'product_unit_id', 'unit_price')
             ->get()
             ->map(function ($it) {
                 return [
                     'product_name' => $it->product ? $it->product->name : 'Item Terhapus',
                     'category_name' => $it->product && $it->product->category ? $it->product->category->name : 'Umum',
                     'unit_name' => $it->unit ? $it->unit->unit_name : 'Pcs',
-                    'avg_price' => (float) $it->avg_price,
+                    'avg_price' => (float) $it->unit_price,
                     'total_qty' => (float) $it->total_qty,
                     'total_subtotal' => (float) $it->total_subtotal,
                 ];

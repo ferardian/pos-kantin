@@ -250,12 +250,84 @@ const getStockStatus = (product) => {
     };
 };
 
+// Cek apakah item merupakan Produk Harga Bebas / Pulsa Digital
+const isOpenPriceItem = (product, unit = null, price = null) => {
+    if (!product) return false;
+    if (product.track_stock === false) return true;
+    if (price !== null && Number(price) === 0) return true;
+    if (unit && Number(unit.price_retail || 0) === 0) return true;
+    return false;
+};
+
+const onCartItemPriceInput = (item) => {
+    let p = Number(item.unit_price);
+    if (isNaN(p) || p < 0) p = 0;
+    item.unit_price = p;
+    item.subtotal = (Number(item.qty) || 0) * p;
+};
+
+const setQuickNominal = (item, amount) => {
+    item.unit_price = amount;
+    item.subtotal = (Number(item.qty) || 0) * amount;
+    focusSearchInput();
+};
+
 // Add to Cart
 const addToCart = (product, specificUnit = null, specificTier = null) => {
     const unit = specificUnit || product.units.find(u => u.is_base_unit) || product.units[0];
     const tier = specificTier || activePriceTier.value || 'umum';
     const price = getUnitPrice(unit, tier);
-    const existingIndex = cart.value.findIndex(item => item.product.id === product.id && item.unit.id === unit.id && item.tier === tier);
+    const isOpen = isOpenPriceItem(product, unit, price);
+
+    if (isOpen) {
+        // Cek jika sudah ada item pulsa/open-price yang harganya masih 0
+        const emptyPriceIndex = cart.value.findIndex(item => 
+            item.product.id === product.id && 
+            item.unit.id === unit.id && 
+            Number(item.unit_price || 0) === 0
+        );
+
+        if (emptyPriceIndex > -1) {
+            nextTick(() => {
+                const inputEl = document.getElementById(`cart-price-input-${emptyPriceIndex}`);
+                if (inputEl) {
+                    inputEl.focus();
+                    inputEl.select();
+                }
+            });
+            return;
+        }
+
+        // Tambah baris baru ke keranjang dengan is_open_price = true
+        const newIndex = cart.value.length;
+        cart.value.push({
+            product,
+            unit,
+            tier,
+            qty: 1,
+            unit_price: 0,
+            subtotal: 0,
+            is_open_price: true,
+            is_editing_price: true,
+            notes: '',
+        });
+
+        nextTick(() => {
+            const inputEl = document.getElementById(`cart-price-input-${newIndex}`);
+            if (inputEl) {
+                inputEl.focus();
+                inputEl.select();
+            }
+        });
+        return;
+    }
+
+    const existingIndex = cart.value.findIndex(item => 
+        item.product.id === product.id && 
+        item.unit.id === unit.id && 
+        item.tier === tier && 
+        !item.is_open_price
+    );
 
     if (existingIndex > -1) {
         cart.value[existingIndex].qty += 1;
@@ -268,6 +340,8 @@ const addToCart = (product, specificUnit = null, specificTier = null) => {
             qty: 1,
             unit_price: price,
             subtotal: price,
+            is_open_price: false,
+            is_editing_price: false,
             notes: '',
         });
     }
@@ -292,7 +366,34 @@ const getItemQtyInCart = (productId, unitId = null, tier = null) => {
 
 const updateUnitQtyInCatalog = (product, unit, delta) => {
     const tier = activePriceTier.value;
-    const existingIndex = cart.value.findIndex(item => item.product.id === product.id && item.unit.id === unit.id && item.tier === tier);
+    const price = getUnitPrice(unit, tier);
+    const isOpen = isOpenPriceItem(product, unit, price);
+
+    if (isOpen) {
+        if (delta > 0) {
+            addToCart(product, unit, tier);
+        } else {
+            for (let i = cart.value.length - 1; i >= 0; i--) {
+                if (cart.value[i].product.id === product.id && cart.value[i].unit.id === unit.id) {
+                    if (cart.value[i].qty > 1) {
+                        cart.value[i].qty -= 1;
+                        cart.value[i].subtotal = cart.value[i].qty * cart.value[i].unit_price;
+                    } else {
+                        cart.value.splice(i, 1);
+                    }
+                    break;
+                }
+            }
+        }
+        return;
+    }
+
+    const existingIndex = cart.value.findIndex(item => 
+        item.product.id === product.id && 
+        item.unit.id === unit.id && 
+        item.tier === tier && 
+        !item.is_open_price
+    );
     if (existingIndex > -1) {
         const newQty = cart.value[existingIndex].qty + delta;
         if (newQty <= 0) {
@@ -307,15 +408,18 @@ const updateUnitQtyInCatalog = (product, unit, delta) => {
     focusSearchInput();
 };
 
-// Update unit inside cart (recalculate using item's own tier)
+// Update unit inside cart (recalculate using item own tier jika bukan open-price)
 const changeItemUnit = (itemIndex, newUnitId) => {
     const item = cart.value[itemIndex];
     if (!item) return;
     const newUnit = item.product.units.find(u => u.id === Number(newUnitId));
     if (newUnit) {
         item.unit = newUnit;
-        item.unit_price = getUnitPrice(newUnit, item.tier || activePriceTier.value);
-        item.subtotal = item.qty * item.unit_price;
+        const isOpen = item.is_open_price || isOpenPriceItem(item.product, newUnit);
+        if (!isOpen) {
+            item.unit_price = getUnitPrice(newUnit, item.tier || activePriceTier.value);
+            item.subtotal = item.qty * item.unit_price;
+        }
     }
 };
 
@@ -324,19 +428,25 @@ const changeCartItemTier = (itemIndex, newTier) => {
     const item = cart.value[itemIndex];
     if (!item) return;
     item.tier = newTier;
-    item.unit_price = getUnitPrice(item.unit, newTier);
-    item.subtotal = item.qty * item.unit_price;
+    const isOpen = item.is_open_price || isOpenPriceItem(item.product, item.unit);
+    if (!isOpen) {
+        item.unit_price = getUnitPrice(item.unit, newTier);
+        item.subtotal = item.qty * item.unit_price;
+    }
 };
 
 // Change active price tier
 const setPriceTier = (tier) => {
     activePriceTier.value = tier;
-    // Sinkronkan seluruh barang yang sudah ada di keranjang ke tier yang baru
+    // Sinkronkan seluruh barang yang sudah ada di keranjang ke tier yang baru KECUALI item harga bebas
     if (cart.value && cart.value.length > 0) {
         cart.value.forEach(item => {
             item.tier = tier;
-            item.unit_price = getUnitPrice(item.unit, tier);
-            item.subtotal = item.qty * item.unit_price;
+            const isOpen = item.is_open_price || isOpenPriceItem(item.product, item.unit);
+            if (!isOpen) {
+                item.unit_price = getUnitPrice(item.unit, tier);
+                item.subtotal = item.qty * item.unit_price;
+            }
         });
     }
     focusSearchInput();
@@ -505,6 +615,21 @@ const handleClickOutsideEmployee = (e) => {
 // Open Checkout Modal
 const openCheckout = () => {
     if (cart.value.length === 0) return;
+
+    // Validasi apakah ada item dengan harga 0 / belum diisi nominalnya
+    const emptyPriceIndex = cart.value.findIndex(i => Number(i.unit_price || 0) <= 0);
+    if (emptyPriceIndex > -1) {
+        const emptyItem = cart.value[emptyPriceIndex];
+        alert();
+        nextTick(() => {
+            const inputEl = document.getElementById(`cart-price-input-${newIndex}`);
+            if (inputEl) {
+                inputEl.focus();
+                inputEl.select();
+            }
+        });
+        return;
+    }
     checkoutForm.items = cart.value.map(i => ({
         product_id: i.product.id,
         product_unit_id: i.unit.id,
@@ -635,6 +760,12 @@ const submitCheckout = () => {
             alert('Jumlah uang diterima kurang dari total tagihan! Jika pegawai belum bayar, silakan centang "Catat Bon / Piutang Karyawan RSIA".');
             return;
         }
+    }
+
+    const emptyPriceItem = cart.value.find(i => Number(i.unit_price || 0) <= 0);
+    if (emptyPriceItem) {
+        alert(`Nominal harga untuk "${emptyPriceItem.product.name}" belum diisi (masih Rp 0). Silakan masukkan harga terlebih dahulu.`);
+        return;
     }
     checkoutForm.items = cart.value.map(i => ({
         product_id: i.product.id,
@@ -1333,9 +1464,12 @@ const handleSearchEnter = (e) => {
     if (exactMatch) {
         lastScannedCode = q;
         lastScanTime = now;
+        const isOpen = isOpenPriceItem(exactMatch);
         addToCart(exactMatch);
         searchQuery.value = '';
-        focusSearchInput();
+        if (!isOpen) {
+            focusSearchInput();
+        }
         return;
     }
 
@@ -1343,9 +1477,13 @@ const handleSearchEnter = (e) => {
     if (filteredProducts.value.length === 1) {
         lastScannedCode = q;
         lastScanTime = now;
-        addToCart(filteredProducts.value[0]);
+        const targetProd = filteredProducts.value[0];
+        const isOpen = isOpenPriceItem(targetProd);
+        addToCart(targetProd);
         searchQuery.value = '';
-        focusSearchInput();
+        if (!isOpen) {
+            focusSearchInput();
+        }
     }
 };
 
@@ -1910,7 +2048,10 @@ body {
                                                 {{ getTierLabel(activePriceTier) }}
                                             </span>
                                         </div>
-                                        <span :class="isFewSearchResults ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'" class="font-black text-amber-900 shrink-0">
+                                        <span v-if="isOpenPriceItem(product, unit)" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                                            Harga Bebas
+                                        </span>
+                                        <span v-else :class="isFewSearchResults ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'" class="font-black text-amber-900 shrink-0">
                                             {{ formatRupiah(getUnitPrice(unit, activePriceTier)) }}
                                         </span>
                                     </div>
@@ -1960,7 +2101,10 @@ body {
                                         {{ unit.unit_name }}
                                     </span>
                                     <div class="flex items-center gap-2 shrink-0">
-                                        <span :class="isFewSearchResults ? 'text-base font-black' : 'text-xs sm:text-sm font-black'">
+                                        <span v-if="isOpenPriceItem(product, unit)" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                            Harga Bebas
+                                        </span>
+                                        <span v-else :class="isFewSearchResults ? 'text-base font-black' : 'text-xs sm:text-sm font-black'">
                                             {{ formatRupiah(getUnitPrice(unit, activePriceTier)) }}
                                         </span>
                                         <div :class="isFewSearchResults ? 'w-7 h-7 bg-amber-400 text-slate-950 group-hover/unit:bg-slate-950 group-hover/unit:text-white' : 'w-5 h-5 bg-slate-200 group-hover/unit:bg-slate-950 group-hover/unit:text-white'" class="rounded-lg flex items-center justify-center transition shadow-2xs">
@@ -2112,11 +2256,65 @@ body {
 
                             <div class="text-right">
                                 <p class="text-xs font-black text-slate-900">{{ formatRupiah(item.subtotal) }}</p>
-                                <p class="text-[10px] text-slate-400">@ {{ formatRupiah(item.unit_price) }}</p>
+                                <div class="flex items-center justify-end gap-1">
+                                    <p class="text-[10px] text-slate-400">@ {{ formatRupiah(item.unit_price) }}</p>
+                                    <button 
+                                        type="button"
+                                        @click="item.is_editing_price = !item.is_editing_price"
+                                        class="text-[9px] text-amber-600 hover:text-amber-800 font-bold hover:underline cursor-pointer ml-1"
+                                        title="Ubah harga satuan"
+                                    >
+                                        {{ item.is_editing_price ? 'Tutup' : 'Ubah' }}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        
+                        <!-- INPUT HARGA BEBAS / PULSA DIGITAL -->
+                        <div 
+                            v-if="item.is_open_price || item.product.track_stock === false || Number(item.unit.price_retail || 0) === 0 || item.is_editing_price"
+                            class="bg-amber-50/80 border border-amber-200 rounded-xl p-2.5 space-y-2 mt-1"
+                        >
+                            <div class="flex items-center justify-between">
+                                <label class="text-[10px] font-black uppercase tracking-wider text-amber-950 flex items-center gap-1">
+                                    <Sparkles class="w-3.5 h-3.5 text-amber-600" />
+                                    <span>Nominal / Harga Satuan:</span>
+                                </label>
+                                <span class="text-[9px] text-amber-800 font-bold bg-amber-200/80 px-1.5 py-0.5 rounded">
+                                    Bebas Ketik
+                                </span>
+                            </div>
+
+                            <div class="relative flex items-center">
+                                <span class="absolute left-3 text-xs font-black text-slate-400">Rp</span>
+                                <input 
+                                    :id="'cart-price-input-' + index"
+                                    v-model.number="item.unit_price"
+                                    @input="onCartItemPriceInput(item)"
+                                    @keydown.enter.prevent="focusSearchInput(false, true)"
+                                    type="number"
+                                    min="0"
+                                    step="500"
+                                    placeholder="0"
+                                    class="w-full pl-9 pr-3 py-1.5 text-sm font-black text-slate-950 bg-white border-2 border-amber-300 focus:border-amber-600 focus:ring-2 focus:ring-amber-400 rounded-lg outline-none transition font-mono shadow-inner"
+                                />
+                            </div>
+
+                            <!-- Tombol Nominal Cepat Pulsa -->
+                            <div class="flex flex-wrap items-center gap-1 pt-0.5">
+                                <span class="text-[9px] font-bold text-amber-900 mr-0.5">Cepat:</span>
+                                <button 
+                                    v-for="nom in [5000, 10000, 15000, 20000, 25000, 50000, 100000]"
+                                    :key="nom"
+                                    type="button"
+                                    @click="setQuickNominal(item, nom)"
+                                    class="px-1.5 py-0.5 text-[9px] font-black rounded border cursor-pointer transition active:scale-95"
+                                    :class="item.unit_price === nom ? 'bg-amber-600 text-white border-amber-700 shadow-2xs' : 'bg-white hover:bg-amber-100 text-slate-800 border-amber-200'"
+                                >
+                                    {{ nom >= 1000 ? (nom / 1000) + 'k' : nom }}
+                                </button>
+                            </div>
+                        </div>
 
                         <!-- Strata / Tipe Harga Switcher for this specific Item -->
                         <div class="flex items-center justify-between gap-1 pt-1.5 border-t border-slate-100">
