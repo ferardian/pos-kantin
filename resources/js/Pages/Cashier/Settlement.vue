@@ -949,7 +949,7 @@ ${cashierBreakdownA4}
                         <tbody class="divide-y divide-slate-100 text-slate-700">
                             <tr 
                                 v-for="(item, idx) in filteredItems" 
-                                :key="item.product_id + '-' + item.unit_name"
+                                :key="'sold-' + (item.product_id || 0) + '-' + (item.product_unit_id || 0) + '-' + (item.avg_price || 0) + '-' + idx"
                                 class="hover:bg-slate-50/60 transition"
                             >
                                 <td class="py-3 px-4 text-center font-mono text-slate-400">

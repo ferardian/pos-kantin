@@ -211,6 +211,7 @@ class CashierSettlementController extends Controller
 
                 return [
                     'product_id' => $first->product_id,
+                    'product_unit_id' => $first->product_unit_id,
                     'product_name' => $first->product ? $first->product->name : 'Item Terhapus',
                     'is_consignment' => $first->product ? (bool) $first->product->is_consignment : false,
                     'category_name' => $first->product && $first->product->category ? $first->product->category->name : 'Umum',
